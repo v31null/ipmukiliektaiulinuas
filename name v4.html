@@ -1,0 +1,4206 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>CHARACTER GENERATOR</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+				font-family: sans-serif;
+				font-size: 12px;
+			}
+			body {
+				background-color: #f0f0f0;
+			}
+			.container {
+				margin: 0 auto;
+				padding: 20px;
+			}
+			h1 {
+				text-align: center;
+				margin-bottom: 30px;
+				color: #000000;
+				border: 1px solid #000000;
+				padding: 10px;
+				background-color: #ffffff;
+			}
+			.input-section {
+				margin-bottom: 30px;
+			}
+			label {
+				display: block;
+				color: #000000;
+			}
+			input[type="text"] {
+				width: 100%;
+				padding: 2px;
+				border: 1px solid #808080;
+				background-color: #ffffff;
+				color: #000000;
+			}
+			input[type="text"]:focus {
+				outline: none;
+				border: 1px solid #0078d7;
+			}
+			input[type="number"] {
+				width: 100%;
+				padding: 2px;
+				border: 1px solid #808080;
+				background-color: #ffffff;
+				color: #000000;
+			}
+			input[type="number"]:focus {
+				outline: none;
+				border: 1px solid #0078d7;
+			}
+			.checkbox-section {
+				display: flex;
+				align-items: flex-start;
+				gap: 10px;
+				row-gap: 10px;
+				column-gap: 10px;
+				flex-direction: column;
+				flex-wrap: nowrap;
+				align-content: flex-start;
+				justify-content: flex-start;
+				user-select: none;
+			}
+			input[type="checkbox"] {
+				width: 20px;
+				height: 20px;
+				cursor: pointer;
+				border: 1px solid #000000;
+			}
+			.checkbox-section label {
+				display: inline;
+				margin-bottom: 0;
+				cursor: pointer;
+			}
+			.button-container {
+				width: 90%;
+				margin: 0 auto 30px;
+				display: flex;
+				gap: 10px;
+			}
+			button {
+				flex: 1;
+				padding: 15px;
+				font-size: 16px;
+				border: 1px solid #000000;
+				cursor: pointer;
+				transition: background-color 0.3s;
+				background-color: #e1e1e1;
+				color: #000000;
+			}
+			button:hover {
+				background-color: #e5f1fb;
+				border-color: #0078d7;
+			}
+			button:active {
+				box-shadow: none;
+				transform: translate(2px, 2px);
+			}
+			.output-section {
+				margin-top: 30px;
+				border: 1px solid #808080;
+				background-color: white;
+			}
+			.entry {
+				background-color: #ffffff;
+				font-size: 14px;
+				line-height: 1.6;
+				word-wrap: break-word;
+				display: flex;
+				justify-content: space-between;
+				align-items: flex-start;
+			}
+			.entry td {
+				border: none !important;
+			}
+			.entry tr {
+				border: 1px solid #e0e0e0;
+			}
+			.entry:nth-child(even) {
+				background-color: #f0f0f0;
+			}
+			.entry-number {
+				user-select: none;
+				-webkit-user-select: none;
+				-moz-user-select: none;
+				-ms-user-select: none;
+				margin-right: 8px;
+				flex-shrink: 0;
+			}
+			.entry-content {
+				flex-grow: 1;
+			}
+			.entry-age {
+				user-select: none;
+				-webkit-user-select: none;
+				-moz-user-select: none;
+				-ms-user-select: none;
+				color: #000000;
+				font-size: 13px;
+				flex-shrink: 0;
+				white-space: nowrap;
+			}
+			.family-tree-table {
+				width: 100%;
+				border-collapse: collapse;
+				background-color: #ffffff;
+			}
+			.family-tree-table th {
+				text-align: left;
+				font-weight: normal;
+				background-color: #f0f0f0;
+				border: 1px solid black;
+				padding: 3px;
+			}
+			.family-tree-table td {
+				vertical-align: top;
+				background-color: #ffffff;
+				border: 1px solid rgb(107, 107, 107);
+			}
+			.family-tree-table input[type="text"] {
+				width: 100% !important;
+				height: 100%;
+			}
+
+			.family-tree-table td input[type="text"],
+			.family-tree-table td input[type="number"] {
+				text-align: left;
+				padding: 1px;
+				border: none;
+			}
+
+			.family-tree-table td:focus input[type="text"],
+			.family-tree-table td:focus input[type="number"] {
+				background-color: white;
+			}
+			table.family-tree-table td:last-child {
+				text-align: center;
+			}
+			.family-tree-table input[type="number"],
+			.family-tree-table input[type="text"] {
+				background-color: #ffffff;
+			}
+
+			.family-tree-table tr:hover input[type="number"],
+			.family-tree-table tr:hover input[type="text"] {
+				background-color: #0078d7;
+				color: #ffffff;
+			}
+
+			.family-tree-table input[type="number"]:focus,
+			.family-tree-table input[type="text"]:focus {
+				background-color: #ffffff !important;
+				color: #000000 !important;
+			}
+
+			.closeness-cell {
+				width: 250px;
+				font-weight: bold;
+				color: #000000;
+				white-space: pre-wrap;
+				text-align: center;
+			}
+			.tree-separator {
+				background-color: #000000;
+				color: #ffffff;
+				font-weight: bold;
+				text-align: center;
+				padding: 15px;
+				margin: 20px 0;
+				border: 1px solid #000000;
+			}
+			.hide-collaterals .row-collateral {
+				display: none;
+			}
+			select {
+				padding: 2px;
+
+				font-size: 14px;
+				border: 1px solid #000000;
+				background-color: #ffffff;
+				color: #000000;
+			}
+			select:focus {
+				outline: none;
+			}
+			#nameEraesTable,
+			#warsTable {
+				display: block;
+				max-height: 260px;
+				overflow-y: hidden;
+			}
+
+			#nameEraesTable thead,
+			#warsTable thead {
+				display: table;
+				width: 100%;
+				table-layout: fixed;
+			}
+
+			#nameEraesTable tbody,
+			#warsTable tbody {
+				display: block;
+				max-height: 260px;
+				overflow-y: auto;
+			}
+
+			#nameEraesTable tr,
+			#warsTable tr {
+				display: table;
+				width: 100%;
+				table-layout: fixed;
+			}
+			*::-webkit-scrollbar {
+				width: 20px;
+			}
+
+			*::-webkit-scrollbar-track {
+				background-color: #c0c0c0;
+				border: 1px solid #000000;
+			}
+
+			*::-webkit-scrollbar-thumb {
+				background-color: #ffffff;
+				border: 1px solid #000000;
+				box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #808080;
+			}
+
+			*::-webkit-scrollbar-thumb:hover {
+				background-color: #e0e0e0;
+			}
+
+			*::-webkit-scrollbar-button {
+				background-color: #c0c0c0;
+				border: 1px solid #000000;
+				height: 16px;
+				background-repeat: no-repeat;
+				background-position: center;
+			}
+
+			*::-webkit-scrollbar-button:vertical:decrement {
+				background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><polygon points="8,4 4,12 12,12" fill="black"/></svg>');
+			}
+
+			*::-webkit-scrollbar-button:vertical:increment {
+				background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><polygon points="8,12 4,4 12,4" fill="black"/></svg>');
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<div style="display: flex; flex-direction: row; flex-wrap: nowrap; align-content: space-around; justify-content: space-between; align-items: center">
+				<div style="margin-top: 10px; display: flex; gap: 10px; align-items: center">
+					<label for="dataSelector">DATA SET</label>
+					<select id="dataSelector">
+						<option value="">-- SELECT --</option>
+						<option value="ger.js">GERMAN</option>
+						<option value="frenc.js">FRENCH</option>
+						<option value="jp.js">JAPANESE</option>
+						<option value="fn.js">FINNISH</option>
+						<option value="tur.js">TURKISH</option>
+						<option value="tur2.js">TURKISH-GREEK</option>
+					</select>
+					<span id="dataStatus" style="color: #000000">NO DATA LOADED</span>
+				</div>
+				<div class="input-section">
+					<div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center">
+						<div>
+							<label for="birthDate">DATE</label>
+							<input type="text" id="birthDate" value="19350101" maxlength="8" pattern="\d{8}" style="width: 100px" />
+						</div>
+						<div>
+							<label for="technologyYearInput">TECH</label>
+							<input type="number" id="technologyYearInput" min="1500" max="2100" style="width: 100px" value="1993" />
+						</div>
+						<div>
+							<label for="upGenInput">GENERATIONS</label>
+							<input type="number" id="upGenInput" value="2" min="1" max="10" style="width: 100px" />
+						</div>
+						<div>
+							<label for="minAgeInput">MIN AGE</label>
+							<input type="number" id="minAgeInput" value="12" style="width: 80px" />
+						</div>
+						<div>
+							<label for="maxAgeInput">MAX AGE</label>
+							<input type="number" id="maxAgeInput" value="67" style="width: 80px" />
+						</div>
+						<div>
+							<label for="amountInput">AMOUNT</label>
+							<input type="number" id="amountInput" value="43" min="1" style="width: 80px" />
+						</div>
+						<div>
+							<label for="ratioInput">GENDER RATIO</label>
+							<input type="number" id="ratioInput" value="1" step="0.1" min="0" style="width: 80px" />
+						</div>
+					</div>
+					<div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center">
+						<div>
+							<input type="text" id="deathDateInput" placeholder="DATE DEATHES" maxlength="8" pattern="\d{8}" style="width: 140px" />
+						</div>
+						<div>
+							<input type="text" id="deathPlaceInput" placeholder="DEATH PLACE" style="width: 140px" />
+						</div>
+						<div style="display: flex; align-items: center; gap: 5px">
+							<input type="text" id="anchorPlaceInput" placeholder="NAME PLACEES" value="" />
+							<input type="number" id="localityStrengthInput" placeholder="%" value="" min="0" max="100" />
+						</div>
+						<input type="number" id="lifeMultiplier" value="1.0" step="0.1" min="0.1" style="width: 100px" />
+					</div>
+				</div>
+				<div class="checkbox-section">
+					<div style="display: flex; flex-wrap: nowrap; flex-direction: row; align-content: flex-start; justify-content: center; align-items: center">
+						<input type="checkbox" id="familyTreeToggle" />
+						<label for="familyTreeToggle">GENERATE FAMILY TREE</label>
+					</div>
+					<div style="display: flex; flex-wrap: nowrap; flex-direction: row; align-content: flex-start; justify-content: center; align-items: center">
+						<input type="checkbox" id="inMilitaryInput" style="width: 20px; height: 20px" />
+						<label for="inMilitaryInput">IN MILITARY</label>
+					</div>
+					<div style="display: flex; flex-wrap: nowrap; flex-direction: row; align-content: flex-start; justify-content: center; align-items: center">
+						<input type="checkbox" id="colToggle" />
+						<label for="colToggle">COL</label>
+					</div>
+					<div style="display: flex; flex-wrap: nowrap; flex-direction: row; align-content: flex-start; justify-content: center; align-items: center">
+						<input type="checkbox" id="stationaryInput" style="width: 20px; height: 20px" />
+						<label for="stationaryInput">LOCALITY</label>
+					</div>
+				</div>
+			</div>
+			<br />
+			<div style="display: flex; flex-wrap: wrap; gap: 40px">
+				<div style="flex: 1; min-width: 400px">
+					<table class="family-tree-table">
+						<tr>
+							<th style="width: 85px">LAST YRS</th>
+							<th style="width: 85px">MON</th>
+							<th style="width: 85px">DAYS</th>
+							<th>NAMEN</th>
+						</tr>
+					</table>
+					<table id="nameEraesTable" class="family-tree-table"></table>
+					<div style="display: flex; align-items: baseline">
+						<label>PATTERN RE‑PLACEMENTES :</label>
+						<input type="text" id="replacePatternInput" value="DEUTSCHES REICHLEIN" style="width: 50%" />
+					</div>
+				</div>
+				<div style="flex: 1; min-width: 400px">
+					<table class="family-tree-table" style="table-layout: fixed">
+						<tr>
+							<th>YRS</th>
+							<th>MON</th>
+							<th>DAYS</th>
+							<th>YRS</th>
+							<th>MON</th>
+							<th>DAYS</th>
+						</tr>
+					</table>
+					<table id="warsTable" class="family-tree-table" style="table-layout: fixed"></table>
+				</div>
+			</div>
+			<br />
+			<div class="input-section">
+				<label for="textInput">TEXT INPUT</label>
+				<input type="text" id="textInput" />
+			</div>
+			<div class="button-container">
+				<button id="textGen" style="width: 90%">TEXT GEN</button>
+			</div>
+			<div class="button-container">
+				<button id="createMale">CREATE MALE</button>
+				<button id="createMixt">CREATE MIXT</button>
+
+				<button id="createFemale">CREATE FEMALE</button>
+				<button id="copyAll">COPY RESULTS</button>
+			</div>
+			<button id="copyJson">EX‑PORT JSON</button>
+			<button id="importJson">IM‑PORT JSON</button>
+			<div class="output-section" id="output"></div>
+		</div>
+		<script>
+			var data = null;
+
+			document.getElementById("dataSelector").addEventListener("change", function () {
+				const file = this.value;
+				const statusEl = document.getElementById("dataStatus");
+
+				if (!file) {
+					statusEl.textContent = "NO DATA LOADED";
+					statusEl.style.color = "#666";
+					return;
+				}
+
+				const existingScript = document.getElementById("dataScript");
+				if (existingScript) {
+					existingScript.remove();
+				}
+
+				const script = document.createElement("script");
+				script.id = "dataScript";
+				script.src = file;
+				script.onload = function () {
+					statusEl.textContent = "LOADED: " + file.toUpperCase();
+					statusEl.style.color = "#4caf50";
+				};
+				script.onerror = function () {
+					statusEl.textContent = "ERROR LOADING: " + file;
+					statusEl.style.color = "#e91e63";
+				};
+				document.head.appendChild(script);
+			});
+		</script>
+		<script>
+			function calculateDetailedAge(birthDate, currentDate, divisor = 1) {
+				const b = parseDate(birthDate);
+				const c = parseDate(currentDate);
+
+				const bTotalDays = b.year * 365.2425 + b.month * 30.4375 + b.day;
+				const cTotalDays = c.year * 365.2425 + c.month * 30.4375 + c.day;
+
+				let diffDays = cTotalDays - bTotalDays;
+				if (diffDays < 0) diffDays = 0;
+
+				const adjustedDaysTotal = diffDays / (divisor || 1);
+
+				const years = Math.floor(adjustedDaysTotal / 365.2425);
+				const remainingAfterYears = adjustedDaysTotal % 365.2425;
+				const months = Math.floor(remainingAfterYears / 30.4375);
+				const days = Math.floor(remainingAfterYears % 30.4375);
+
+				return `( ${years} YRS ${months} MON ${days} DꜼS )`;
+			}
+
+			function getDualAgeBox(birthDate, referenceDate, deathDate = null) {
+				const endDate = deathDate || referenceDate;
+				const m = getMultiplier();
+
+				const rawAge = calculateDetailedAge(birthDate, endDate, 1);
+				const adjAge = calculateDetailedAge(birthDate, endDate, m);
+
+				return `<span class="entry-age">${rawAge}<br/>${adjAge}</span>`;
+			}
+
+			function applyHistoricalPlaceName(rawPlaceName, birthDate) {
+				if (!rawPlaceName || !birthDate) {
+					return rawPlaceName;
+				}
+
+				const birth = parseDate(birthDate);
+				const birthTotalDays = birth.year * 365.2425 + birth.month * 30.4375 + birth.day;
+
+				const patternInput = document.getElementById("replacePatternInput").value.trim();
+				if (!patternInput) return rawPlaceName;
+
+				const escapedPattern = patternInput.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+				const targetRegex = new RegExp(escapedPattern, "gi");
+
+				if (!targetRegex.test(rawPlaceName)) {
+					return rawPlaceName;
+				}
+				targetRegex.lastIndex = 0;
+
+				const eraes = readNameEraesFromTable();
+				if (eraes.length === 0) return rawPlaceName;
+
+				const lastEra = eraes[eraes.length - 1];
+				const lastEraTotalDays = lastEra.lastYear * 365.2425 + lastEra.lastMonth * 30.4375 + lastEra.lastDay;
+				if (birthTotalDays >= lastEraTotalDays) {
+					return rawPlaceName;
+				}
+
+				let newText = rawPlaceName;
+				for (let i = 0; i < eraes.length; i++) {
+					const era = eraes[i];
+					const eraTotalDays = era.lastYear * 365.2425 + era.lastMonth * 30.4375 + era.lastDay;
+					if (birthTotalDays < eraTotalDays) {
+						newText = era.namen;
+						break;
+					}
+				}
+
+				return rawPlaceName.replace(targetRegex, newText);
+			}
+			document.getElementById("birthDate").addEventListener("input", function (e) {
+				this.value = this.value.replace(/\D/g, "").substring(0, 8);
+
+				if (this.value.length >= 4) {
+					document.getElementById("technologyYearInput").value = this.value.substring(0, 4);
+				}
+			});
+
+			let lastGeneratedTreeData = null;
+			document.getElementById("colToggle").addEventListener("change", function () {
+				const outputDiv = document.getElementById("output");
+				if (this.checked) {
+					outputDiv.classList.add("hide-collaterals");
+				} else {
+					outputDiv.classList.remove("hide-collaterals");
+				}
+			});
+			function generateFamilyTreeFromPerson(person, referenceDate) {
+				const m = getMultiplier();
+				const refDate = parseDate(referenceDate);
+				const self = person;
+
+				const upGenInput = document.getElementById("upGenInput");
+				const upGenLimit = upGenInput ? parseInt(upGenInput.value) || 2 : 2;
+
+				if (person.motherName && person.fatherName && !person.mother && !person.father) {
+					const personBirth = parseDate(person.birthDate);
+					const motherAge = getMotherAgeAtBirth();
+					const motherBirthYear = personBirth.year - motherAge;
+					const mother = createPerson(0, generateRandomDateInYear(motherBirthYear), getRandomBirthplace(), person.familyName);
+					mother.givenNames = person.motherName;
+					person.mother = mother;
+
+					const fatherAgeDiff = random(Math.round(-5 * m), Math.round(10 * m));
+					let fatherBirthYear = motherBirthYear + fatherAgeDiff;
+					const maxFatherBirthYear = personBirth.year - Math.round(16 * m);
+					if (fatherBirthYear > maxFatherBirthYear) fatherBirthYear = maxFatherBirthYear;
+					const father = createPerson(1, generateRandomDateInYear(fatherBirthYear), getRandomBirthplace(), weightedRandomChoice(data.family_names));
+					father.familyName = person.familyName;
+					father.givenNames = person.fatherName;
+					person.father = father;
+
+					person.mother.children = [person];
+					person.father.children = [person];
+					person.mother.spouse = person.father;
+					person.father.spouse = person.mother;
+
+					mother.isAncestor = true;
+					father.isAncestor = true;
+					generateAncestors(person.mother, 1, upGenLimit, referenceDate);
+					generateAncestors(person.father, 1, upGenLimit, referenceDate);
+
+					const motherSiblings = generateSiblings(person.mother, person.mother.mother, person.mother.father, referenceDate, [], true);
+					const fatherSiblings = generateSiblings(person.father, person.father.mother, person.father.father, referenceDate, [], true);
+					person.mother.siblings = motherSiblings;
+					person.father.siblings = fatherSiblings;
+				} else if (!person.mother && !person.father) {
+					generateAncestors(self, 1, upGenLimit, referenceDate);
+				}
+
+				const selfSiblings = generateSiblings(self, self.mother, self.father, referenceDate, [], true);
+
+				applyDeathLogic(self, referenceDate);
+				selfSiblings.forEach((sib) => applyDeathLogic(sib, referenceDate));
+
+				const processCollaterals = (siblings) => {
+					const processDeepCollateral = (p) => {
+						generateInlineParentNames(p, []);
+						generateSpouseForSibling(p, referenceDate);
+						applyDeathLogic(p, referenceDate);
+						if (p.children && p.children.length > 0) {
+							for (const child of p.children) {
+								processDeepCollateral(child);
+							}
+						}
+					};
+					for (const sib of siblings) processDeepCollateral(sib);
+				};
+
+				processCollaterals(selfSiblings);
+
+				let spouse = self.spouse;
+				let children = self.children || [];
+				let spouseTree = null;
+				let exSpouseTrees = [];
+
+				if (spouse) {
+					spouse.children = children.filter((c) => c.mother === spouse || c.father === spouse);
+					spouseTree = generateSpouseTree(spouse, referenceDate);
+					applyDeathLogic(spouse, referenceDate);
+				}
+
+				if (children.length > 0) {
+					processCollaterals(children);
+				}
+
+				if (person.exSpouses && person.exSpouses.length > 0) {
+					person.exSpouses.forEach((exEntry) => {
+						const ex = exEntry.exSpouse;
+						const exChildren = children.filter((c) => c.mother === ex || c.father === ex);
+						ex.children = exChildren;
+						const exTreeData = generateSpouseTree(ex, referenceDate);
+						exSpouseTrees.push({
+							exSpouse: ex,
+							exChildren: exChildren,
+							exSpouseTree: exTreeData,
+							exSpouseMother: ex.mother,
+							exSpouseFather: ex.father,
+						});
+						applyDeathLogic(ex, referenceDate);
+					});
+				}
+
+				const mother = self.mother;
+				const father = self.father;
+
+				return {
+					self: self,
+					selfSiblings: selfSiblings,
+					spouse: spouse,
+					spouseTree: spouseTree,
+					exSpouseTrees: exSpouseTrees,
+					children: children,
+					grandchildren: [],
+					mother: mother,
+					father: father,
+					motherSiblings: [],
+					fatherSiblings: [],
+					maternalGrandmother: mother ? mother.mother : null,
+					maternalGrandmotherSiblings: [],
+					maternalGrandfather: mother ? mother.father : null,
+					maternalGrandfatherSiblings: [],
+					paternalGrandmother: father ? father.mother : null,
+					paternalGrandmotherSiblings: [],
+					paternalGrandfather: father ? father.father : null,
+					paternalGrandfatherSiblings: [],
+				};
+			}
+			document.getElementById("textGen").addEventListener("click", function () {
+				let input = document.getElementById("textInput").value;
+				if (!input) {
+					alert("Please paste character text.");
+					return;
+				}
+
+				input = input.trim();
+
+				const refDateStr = document.getElementById("birthDate").value;
+				let formattedRefDate;
+				if (/^\d{8}$/.test(refDateStr)) {
+					formattedRefDate = formatDate(parseInt(refDateStr.substring(0, 4)), parseInt(refDateStr.substring(4, 6)), parseInt(refDateStr.substring(6, 8)));
+				} else {
+					formattedRefDate = "1935/01/01";
+				}
+
+				function detectGender(nameStr) {
+					if (!nameStr) return 1;
+					const firstToken = nameStr.split(/[\s\u00A0]+/)[0];
+					const match = data.first_names ? data.first_names.find((n) => n.name === firstToken) : null;
+					if (match) return match.gender;
+					if (/[ae]$/i.test(firstToken)) return 0;
+					return 1;
+				}
+
+				const mainRegex = /^(.+?)[\s\u00A0]*,[\s\u00A0]*(.+?)[\s\u00A0]+born[\s\u00A0]+(.+?)[\s\u00A0]+(\d{4}\/\d{2}\/\d{2}(?:\sA\.C\.)?)/;
+				const mainMatch = input.match(mainRegex);
+
+				if (!mainMatch) {
+					alert("Invalid format. Expecting: FAMILY , GIVEN born PLACE YYYY/MM/DD");
+					return;
+				}
+
+				const familyName = mainMatch[1].trim();
+				const givenNames = mainMatch[2].trim();
+				const birthPlace = mainMatch[3].trim();
+				const birthDate = mainMatch[4].trim();
+				const gender = detectGender(givenNames);
+
+				const person = createPerson(gender, birthDate, birthPlace, familyName);
+				person.givenNames = givenNames;
+				const metadataIndex = input.search(/,(?:\s|\u00A0)*(?:parents|spouse|ex-spouse|children)[\s\u00A0]*:/i);
+				const headerText = metadataIndex !== -1 ? input.substring(0, metadataIndex) : input;
+				const deathRegex = /died[\s\u00A0]+(.+?)[\s\u00A0]+(\d{4}\/\d{2}\/\d{2}(?:\sA\.C\.)?)/;
+				const deathMatch = headerText.match(deathRegex);
+				if (deathMatch) {
+					const fullDeathPlace = deathMatch[1].trim();
+					const deathDate = deathMatch[2].trim();
+
+					person.died = true;
+					person.deathDate = deathDate;
+
+					if (fullDeathPlace.startsWith("IN MILITARY-SERVICE IN")) {
+						person.inMilitary = true;
+						person.deathPlace = fullDeathPlace.replace("IN MILITARY-SERVICE IN ", "").trim();
+					} else {
+						person.inMilitary = false;
+						person.deathPlace = fullDeathPlace;
+					}
+				} else {
+					person.died = false;
+					person.deathDate = null;
+				}
+				person.deathFromInput = true;
+				const parentRegex = /[\s\u00A0]*,[\s\u00A0]*parents[\s\u00A0]*:[\s\u00A0]*(.+?)[\s\u00A0]*&[\s\u00A0]*(.+?)(?:[\s\u00A0]*,|$)/;
+				const parentMatch = input.match(parentRegex);
+				if (parentMatch) {
+					person.motherName = parentMatch[1].trim();
+					person.fatherName = parentMatch[2].trim();
+				}
+
+				const exSpouseRegexGlobal = /[\s\u00A0]*,[\s\u00A0]*ex-spouse[\s\u00A0]*:[\s\u00A0]*(.+?)[\s\u00A0]+(\d{4}\/\d{2}\/\d{2}(?:\sA\.C\.)?)[\s\u00A0]+(.+?)(?:[\s\u00A0]*,|$)/g;
+				let exMatch;
+				while ((exMatch = exSpouseRegexGlobal.exec(input)) !== null) {
+					const exName = exMatch[1].trim();
+					const exDate = exMatch[2].trim();
+					const exPlace = exMatch[3].trim();
+					const exGender = gender === 1 ? 0 : 1;
+					const exSpouse = createPerson(exGender, exDate, exPlace, familyName);
+
+					if (gender === 0) {
+						exSpouse.birthFamilyName = weightedRandomChoice(data.family_names);
+						exSpouse.familyName = exSpouse.birthFamilyName;
+					} else {
+						exSpouse.birthFamilyName = familyName;
+						exSpouse.familyName = familyName;
+					}
+
+					exSpouse.givenNames = exName;
+
+					person.exSpouses.push({
+						exSpouse: exSpouse,
+						marriedDate: null,
+						endDate: null,
+					});
+
+					exSpouse.exSpouses.push({
+						exSpouse: person,
+						marriedDate: null,
+						endDate: null,
+					});
+				}
+
+				const spouseRegex = /[\s\u00A0]*,[\s\u00A0]*spouse[\s\u00A0]*:[\s\u00A0]*(.+?)[\s\u00A0]+(\d{4}\/\d{2}\/\d{2}(?:\sA\.C\.)?)[\s\u00A0]+(.+?)(?:[\s\u00A0]*,|$)/;
+				const spouseMatch = input.match(spouseRegex);
+				if (spouseMatch) {
+					const spName = spouseMatch[1].trim();
+					const spDate = spouseMatch[2].trim();
+					const spPlace = spouseMatch[3].trim();
+					const spGender = gender === 1 ? 0 : 1;
+					const spouse = createPerson(spGender, spDate, spPlace, familyName);
+
+					if (gender === 0) {
+						spouse.birthFamilyName = weightedRandomChoice(data.family_names);
+					} else {
+						spouse.birthFamilyName = familyName;
+					}
+
+					spouse.givenNames = spName;
+					person.spouse = spouse;
+					spouse.spouse = person;
+				}
+
+				const childrenRegex = /[\s\u00A0]*,[\s\u00A0]*children[\s\u00A0]*:[\s\u00A0]*(.*)/;
+				const childrenMatch = input.match(childrenRegex);
+				if (childrenMatch) {
+					const childrenStr = childrenMatch[1];
+					const childEntries = childrenStr.split(/[\s\u00A0]*,[\s\u00A0]*/);
+
+					childEntries.forEach((entry) => {
+						// 1. Find the birth date first (the anchor)
+						const dateMatch = entry.match(/(\d{4}\/\d{2}\/\d{2}(?:\sA\.C\.)?)/);
+
+						if (dateMatch) {
+							const cDate = dateMatch[1];
+							const dateIndex = dateMatch.index;
+
+							// Isolate the "Header" (everything before the birth date)
+							// We trim the "NA" or "ODER NA" specifically if it's hanging off the end
+							let nameAndPlace = entry.substring(0, dateIndex).trim();
+							nameAndPlace = nameAndPlace.replace(/,\s*$/, "").replace(/\sODER\sNA$/, "");
+
+							const lastSpaceIndex = Math.max(nameAndPlace.lastIndexOf(" "), nameAndPlace.lastIndexOf("\u00A0"));
+
+							let cName = nameAndPlace,
+								cPlace = "UNKNOWN";
+							if (lastSpaceIndex !== -1) {
+								cName = nameAndPlace.substring(0, lastSpaceIndex).trim();
+								cPlace = nameAndPlace.substring(lastSpaceIndex + 1).trim();
+							}
+
+							const cGender = detectGender(cName);
+							const child = createPerson(cGender, cDate, cPlace, familyName);
+							child.givenNames = cName;
+
+							// 2. Isolate the "Footer" (everything AFTER the birth date)
+							const remainder = entry.substring(dateIndex + cDate.length);
+
+							// 3. Look for "died" ONLY in the remainder to avoid the "NA" place-name bug
+							const childDeathMatch = remainder.match(/died[\s\u00A0]+(.+?)[\s\u00A0]+(\d{4}\/\d{2}\/\d{2}(?:\sA\.C\.)?)/);
+							if (childDeathMatch) {
+								child.died = true;
+								child.deathPlace = childDeathMatch[1].trim().replace(/\sODER\sNA$/, "");
+								child.deathDate = childDeathMatch[2].trim();
+							}
+							child.deathFromInput = true;
+							// 4. Handle "born of" logic in the remainder
+							const bornOfRegex = /born[\s\u00A0]+of[\s\u00A0]*:[\s\u00A0]*(.+?)[\s\u00A0]*&[\s\u00A0]*(.+)/;
+							const bornMatch = remainder.match(bornOfRegex);
+							let assignedMother = null;
+							let assignedFather = null;
+
+							if (bornMatch) {
+								const mName = bornMatch[1].trim();
+								const fName = bornMatch[2].trim();
+
+								if (person.gender === 0 && person.givenNames === mName) assignedMother = person;
+								if (person.gender === 1 && person.givenNames === fName) assignedFather = person;
+
+								if (person.spouse && person.spouse.gender === 0 && person.spouse.givenNames === mName) assignedMother = person.spouse;
+								if (person.spouse && person.spouse.gender === 1 && person.spouse.givenNames === fName) assignedFather = person.spouse;
+
+								if (person.exSpouses.length > 0) {
+									person.exSpouses.forEach((exEntry) => {
+										const ex = exEntry.exSpouse;
+										if (ex.gender === 0 && ex.givenNames === mName) assignedMother = ex;
+										if (ex.gender === 1 && ex.givenNames === fName) assignedFather = ex;
+									});
+								}
+
+								if (!assignedMother) child.motherName = mName;
+								if (!assignedFather) child.fatherName = fName;
+							}
+
+							if (!assignedMother && !child.motherName) {
+								assignedMother = person.gender === 0 ? person : person.spouse;
+							}
+							if (!assignedFather && !child.fatherName) {
+								assignedFather = person.gender === 1 ? person : person.spouse;
+							}
+
+							child.mother = assignedMother;
+							child.father = assignedFather;
+							child.parentsFromInput = true;
+							person.children.push(child);
+
+							if (assignedMother && assignedMother !== person) {
+								if (!assignedMother.children) assignedMother.children = [];
+								assignedMother.children.push(child);
+							}
+							if (assignedFather && assignedFather !== person) {
+								if (!assignedFather.children) assignedFather.children = [];
+								assignedFather.children.push(child);
+							}
+						}
+					});
+					person.children.sort((a, b) => compareDates(a.birthDate, b.birthDate));
+				}
+
+				const tree = generateFamilyTreeFromPerson(person, formattedRefDate);
+				lastGeneratedTreeData = tree;
+
+				const output = document.getElementById("output");
+				output.innerHTML = "";
+
+				const treeHtml = renderFamilyTreeTable(tree, formattedRefDate);
+				const div = document.createElement("div");
+				div.className = "entry";
+
+				div.innerHTML = `
+					<span class="entry-number">1.</span>
+					<span class="entry-content">${treeHtml}</span>
+					<span class="entry-age"></span>
+				`;
+
+				output.appendChild(div);
+			});
+			document.getElementById("copyJson").addEventListener("click", function () {
+				const outputDiv = document.getElementById("output");
+				const separators = outputDiv.querySelectorAll(".tree-separator");
+				const tables = outputDiv.querySelectorAll("table.family-tree-table");
+
+				const currentSettings = {
+					date: document.getElementById("birthDate").value,
+					tech: document.getElementById("technologyYearInput").value,
+					m: document.getElementById("lifeMultiplier").value,
+					replacePatternInput: document.getElementById("replacePatternInput").value,
+					upGen: document.getElementById("upGenInput").value,
+					minAge: document.getElementById("minAgeInput").value,
+					maxAge: document.getElementById("maxAgeInput").value,
+					deathDate: document.getElementById("deathDateInput").value,
+					deathPlace: document.getElementById("deathPlaceInput").value,
+					anchorPlace: document.getElementById("anchorPlaceInput").value,
+					locStrength: document.getElementById("localityStrengthInput").value,
+					military: document.getElementById("inMilitaryInput").checked,
+					stationary: document.getElementById("stationaryInput").checked,
+					familyTree: document.getElementById("familyTreeToggle").checked,
+					col: document.getElementById("colToggle").checked,
+				};
+
+				let exportData = {
+					settings: currentSettings,
+					nameEraes: readNameEraesFromTable(),
+					wars: readWarsFromTable(),
+					tables: [],
+					rawEntries: [],
+				};
+
+				if (tables.length > 0) {
+					separators.forEach((sep, index) => {
+						const table = tables[index];
+						if (!table) return;
+						let tableBlock = { name: sep.innerText, rows: [] };
+						const trs = table.querySelectorAll("tr");
+						trs.forEach((tr) => {
+							const tds = tr.querySelectorAll("td");
+							if (tds.length >= 2) {
+								tableBlock.rows.push({
+									title: tds[0].innerText,
+									text: tds[1].innerText,
+								});
+							}
+						});
+						exportData.tables.push(tableBlock);
+					});
+				} else {
+					const entries = outputDiv.querySelectorAll(".entry");
+					entries.forEach((entry) => {
+						const content = entry.querySelector(".entry-content");
+						if (content) exportData.rawEntries.push(content.innerText);
+					});
+				}
+
+				navigator.clipboard.writeText(JSON.stringify(exportData, null, 2));
+			});
+			document.getElementById("importJson").addEventListener("click", function () {
+				const inputStr = document.getElementById("textInput").value;
+				try {
+					const imported = JSON.parse(inputStr);
+
+					if (imported.settings) {
+						const s = imported.settings;
+						document.getElementById("birthDate").value = s.date || "19350101";
+						document.getElementById("technologyYearInput").value = s.tech || "1993";
+						document.getElementById("lifeMultiplier").value = s.m || "1.0";
+						document.getElementById("upGenInput").value = s.upGen || "2";
+						document.getElementById("replacePatternInput").value = s.replacePatternInput || "DEUTSCHES REICHLEIN";
+						document.getElementById("minAgeInput").value = s.minAge || "12";
+						document.getElementById("maxAgeInput").value = s.maxAge || "67";
+						document.getElementById("deathDateInput").value = s.deathDate || "";
+						document.getElementById("deathPlaceInput").value = s.deathPlace || "";
+						document.getElementById("anchorPlaceInput").value = s.anchorPlace || "";
+						document.getElementById("localityStrengthInput").value = s.locStrength || "";
+						document.getElementById("inMilitaryInput").checked = !!s.military;
+						document.getElementById("stationaryInput").checked = !!s.stationary;
+						document.getElementById("familyTreeToggle").checked = !!s.familyTree;
+						document.getElementById("colToggle").checked = !!s.col;
+					}
+
+					if (imported.nameEraes && imported.nameEraes.length > 0) {
+						NAME_ERAES = imported.nameEraes;
+						initializeNameEraesTable();
+					}
+
+					if (imported.wars && imported.wars.length > 0) {
+						WAR_PERIODS = imported.wars;
+						initializeWarsTable();
+					}
+
+					const formattedRefDate = formatDate(parseInt(document.getElementById("birthDate").value.substring(0, 4)), parseInt(document.getElementById("birthDate").value.substring(4, 6)), parseInt(document.getElementById("birthDate").value.substring(6, 8)));
+
+					const output = document.getElementById("output");
+					output.innerHTML = "";
+
+					if (imported.tables && imported.tables.length > 0) {
+						const div = document.createElement("div");
+						div.className = "entry";
+						let htmlBuilder = "";
+						imported.tables.forEach((tableBlock) => {
+							htmlBuilder += `<div class="tree-separator">${tableBlock.name}</div>`;
+							htmlBuilder += `<table class="family-tree-table"><tr><th>CLOSENESS</th><th colspan=2>DETAIL</th></tr>`;
+							tableBlock.rows.forEach((row) => {
+								const t = row.title.toUpperCase();
+								let rowClass = t.includes("SIBLING") || t.includes("COUSIN") ? "row-collateral" : "row-direct";
+
+								const dateRegex = /(\d{4}\/\d{2}\/\d{2}(?:\sA\.C\.)?)/g;
+								const allDates = row.text.match(dateRegex);
+								let bDate = allDates ? allDates[0] : null;
+								let dDate = null;
+								if (row.text.includes("died")) {
+									const parts = row.text.split("died");
+									const deathMatch = parts[parts.length - 1].match(dateRegex);
+									if (deathMatch) dDate = deathMatch[0];
+								}
+								const ageBox = bDate ? getDualAgeBox(bDate, formattedRefDate, dDate) : "";
+
+								htmlBuilder += `<tr class="${rowClass}">
+                        <td class="closeness-cell">${row.title}</td>
+                        <td>${row.text}</td>
+                        <td>${ageBox}</td>
+                    </tr>`;
+							});
+							htmlBuilder += `</table>`;
+						});
+						div.innerHTML = `<span class="entry-number">IMP</span><span class="entry-content">${htmlBuilder}</span>`;
+						output.appendChild(div);
+					} else if (imported.rawEntries) {
+						imported.rawEntries.forEach((text, i) => {
+							const div = document.createElement("div");
+							div.className = "entry";
+
+							const dateMatch = text.match(/(\d{4}\/\d{2}\/\d{2}(?:\sA\.C\.)?)/);
+							const bDate = dateMatch ? dateMatch[1] : null;
+							const ageBox = bDate ? getDualAgeBox(bDate, formattedRefDate) : "";
+
+							div.innerHTML = `<span class="entry-number">${i + 1}.</span>
+                                 <span class="entry-content">${text}</span>
+                                 <span class="entry-age">${ageBox}</span>`;
+							output.appendChild(div);
+						});
+					}
+				} catch (e) {
+					alert("Error importing: " + e.message);
+				}
+			});
+
+			const SOLDIER_AGE_MIN = 19;
+			const SOLDIER_AGE_MAX = 28;
+			const FEMALE_WAR_DEATH_CHANCE = 0.35;
+			const MALE_WAR_DEATH_CHANCE = 0.005;
+			const PEACETIME_MILITARY_DEATH_CHANCE = 0.001;
+
+			let WAR_PERIODS = [
+				{ start: { year: 1852, month: 2, day: 13 }, end: { year: 1854, month: 11, day: 11 } },
+				{ start: { year: 1934, month: 8, day: 19 }, end: { year: 9999, month: 12, day: 30 } },
+			];
+			const VISIBILITY_DATA = {
+				1841: 99.8,
+				1842: 99.8,
+				1843: 99.9,
+				1844: 99.8,
+				1845: 99.8,
+				1846: 99.8,
+				1847: 99.7,
+				1848: 99.8,
+				1849: 99.7,
+				1850: 97.7,
+				1851: 99.8,
+				1852: 99.8,
+				1853: 99.8,
+				1854: 99.8,
+				1855: 99.6,
+				1856: 99.8,
+				1857: 99.8,
+				1858: 99.8,
+				1859: 99.8,
+				1860: 99.7,
+				1861: 99.8,
+				1862: 99.7,
+				1863: 99.8,
+				1864: 99.7,
+				1865: 99.6,
+				1866: 99.8,
+				1867: 99.7,
+				1868: 99.7,
+				1869: 99.7,
+				1870: 99.5,
+				1871: 99.7,
+				1872: 99.7,
+				1873: 99.7,
+				1874: 99.6,
+				1875: 99.5,
+				1876: 99.7,
+				1877: 99.7,
+				1878: 99.7,
+				1879: 99.6,
+				1880: 99.4,
+				1881: 99.6,
+				1882: 99.6,
+				1883: 99.6,
+				1884: 99.2,
+				1885: 99.1,
+				1886: 99.2,
+				1887: 99.1,
+				1888: 99.1,
+				1889: 99.0,
+				1890: 99.0,
+				1891: 99.1,
+				1892: 99.1,
+				1893: 98.9,
+				1894: 98.6,
+				1895: 98.7,
+				1896: 98.8,
+				1897: 98.8,
+				1898: 18.5,
+				1899: 98.2,
+				1900: 98.2,
+				1901: 98.6,
+				1902: 98.3,
+				1903: 98.2,
+				1904: 96.1,
+				1905: 84.2,
+				1906: 72.8,
+				1907: 69.4,
+				1908: 67.5,
+				1909: 69.5,
+				1910: 68.1,
+				1911: 65.2,
+				1912: 64.5,
+				1913: 61.3,
+				1914: 61.9,
+				1915: 58.2,
+				1916: 59.8,
+				1917: 60.9,
+				1918: 61.8,
+				1919: 61.3,
+				1920: 59.2,
+				1921: 57.5,
+				1922: 57.1,
+				1923: 57.0,
+				1924: 51.8,
+				1925: 51.7,
+				1926: 32.9,
+				1927: 28.9,
+				1928: 27.3,
+				1929: 25.7,
+				1930: 24.6,
+				1931: 23.1,
+				1932: 22.0,
+				1933: 20.3,
+				1934: 19.3,
+				1935: 14.6,
+				1936: 12.3,
+				1937: 10.5,
+				1938: 9.5,
+				1939: 8.6,
+				1940: 7.0,
+				1941: 6.4,
+				1942: 5.7,
+				1943: 5.6,
+				1944: 5.0,
+				1945: 4.2,
+				1946: 4.3,
+				1947: 3.7,
+				1948: 3.8,
+				1949: 3.4,
+				1950: 2.9,
+				1951: 3.0,
+				1952: 2.8,
+				1953: 2.6,
+				1954: 2.4,
+				1955: 2.0,
+			};
+
+			function getMaskProbability(year) {
+				const refYear = parseInt(document.getElementById("birthDate").value.substring(0, 4)) || 1935;
+				const techYear = parseInt(document.getElementById("technologyYearInput").value) || refYear;
+				year += techYear - refYear;
+				if (year < 1841) return 1.0;
+				if (year > 1955) return 0.0;
+				let total = 0,
+					count = 0;
+				for (let i = -1; i <= 1; i++) {
+					let y = year + i;
+					if (VISIBILITY_DATA[y] !== undefined) {
+						total += VISIBILITY_DATA[y];
+						count++;
+					}
+				}
+				return (count > 0 ? total / count : VISIBILITY_DATA[year] || 0) / 100;
+			}
+			function getMaskedDate(person) {
+				if (person.inMilitary || person.motherIsBureau || person.fatherIsBureau || person.isOrphan) return person.birthDate;
+
+				const bDate = parseDate(person.birthDate);
+				const prob = getMaskProbability(bDate.year);
+
+				if (Math.random() < prob) {
+					return formatDate(bDate.year, 7, 1);
+				}
+
+				return person.birthDate;
+			}
+			let NAME_ERAES = [
+				{ lastYear: -200, lastMonth: 1, lastDay: 1, namen: "???" },
+				{ lastYear: -100, lastMonth: 1, lastDay: 1, namen: "PROTO‑SAXEN‑BUNDLEIN ODER NA" },
+				{ lastYear: 20, lastMonth: 1, lastDay: 1, namen: "FRIESEN‑POLITYLEIN ODER NA" },
+				{ lastYear: 60, lastMonth: 1, lastDay: 1, namen: "GERMANISCHES KAISERLEIN ODER NA" },
+				{ lastYear: 240, lastMonth: 1, lastDay: 1, namen: "FRANKEN‑REICHLEIN ODER NA" },
+				{ lastYear: 500, lastMonth: 1, lastDay: 1, namen: "NORD-GERMANISCHES KAISERLEIN ODER NA" },
+				{ lastYear: 853, lastMonth: 1, lastDay: 1, namen: "OST-SAXEN‑CAESARTUM ODER NA" },
+				{ lastYear: 1320, lastMonth: 1, lastDay: 1, namen: "HEILIGES DEUTSCHES REICHLEIN" },
+				{ lastYear: 1852, lastMonth: 1, lastDay: 1, namen: "DOPPEL‑KOENIGTUM DES MITTELS-MAENNLEINS EUROPALEINS" },
+				{ lastYear: 1854, lastMonth: 1, lastDay: 1, namen: "ANGEFOCHTEN" },
+				{ lastYear: 1908, lastMonth: 1, lastDay: 1, namen: "DEUTSCHES BUNDESLEIN" },
+			];
+
+			function initializeNameEraesTable() {
+				const table = document.getElementById("nameEraesTable");
+				while (table.rows.length > 1) table.deleteRow(1);
+				NAME_ERAES.forEach((era) => {
+					const row = table.insertRow();
+					row.innerHTML = `<td style="width: 85px"><input type="number" value="${era.lastYear}" ></td><td style="width: 85px"><input type="number" value="${era.lastMonth}" min="1" max="12" ></td><td style="width: 85px"><input type="number" value="${era.lastDay}" min="1" max="31" ></td><td ><input type="text" value="${era.namen}" ></td>`;
+				});
+			}
+
+			function initializeWarsTable() {
+				const table = document.getElementById("warsTable");
+				while (table.rows.length > 1) table.deleteRow(1);
+				WAR_PERIODS.forEach((war) => {
+					const row = table.insertRow();
+					row.innerHTML = `<td><input type="number" value="${war.start.year}" ></td><td><input type="number" value="${war.start.month}" min="1" max="12" ></td><td><input type="number" value="${war.start.day}" min="1" max="31"></td><td><input type="number" value="${war.end.year}" ></td><td><input type="number" value="${war.end.month}" min="1" max="12" ></td><td><input type="number" value="${war.end.day}" min="1" max="31" ></td>`;
+				});
+			}
+
+			function readNameEraesFromTable() {
+				const table = document.getElementById("nameEraesTable");
+				const result = [];
+				for (let i = 1; i < table.rows.length; i++) {
+					const inputs = table.rows[i].querySelectorAll("input");
+					result.push({
+						lastYear: parseInt(inputs[0].value) || 0,
+						lastMonth: parseInt(inputs[1].value) || 1,
+						lastDay: parseInt(inputs[2].value) || 1,
+						namen: inputs[3].value || "",
+					});
+				}
+				return result;
+			}
+
+			function readWarsFromTable() {
+				const table = document.getElementById("warsTable");
+				const result = [];
+				for (let i = 1; i < table.rows.length; i++) {
+					const inputs = table.rows[i].querySelectorAll("input");
+					result.push({
+						start: { year: parseInt(inputs[0].value) || 0, month: parseInt(inputs[1].value) || 1, day: parseInt(inputs[2].value) || 1 },
+						end: { year: parseInt(inputs[3].value) || 9999, month: parseInt(inputs[4].value) || 12, day: parseInt(inputs[5].value) || 31 },
+					});
+				}
+				return result;
+			}
+
+			function addNameEraesRow() {
+				const table = document.getElementById("nameEraesTable");
+				const row = table.insertRow();
+				row.innerHTML = `<td><input type="number" value="0" ></td><td><input type="number" value="1" min="1" max="12"></td><td><input type="number" value="1" min="1" max="31" ></td><td><input type="text" value="" ></td>`;
+			}
+
+			function addWarsRow() {
+				const table = document.getElementById("warsTable");
+				const row = table.insertRow();
+				row.innerHTML = `<td><input type="number" value="0" ></td><td><input type="number" value="1" min="1" max="12"></td><td><input type="number" value="1" min="1" max="31" ></td><td><input type="number" value="9999"></td><td><input type="number" value="12" min="1" max="12"></td><td><input type="number" value="31" min="1" max="31"></td>`;
+			}
+
+			document.addEventListener("keydown", function (e) {
+				if (e.key === "Insert") {
+					const active = document.activeElement;
+					const nameEraesTable = document.getElementById("nameEraesTable");
+					const warsTable = document.getElementById("warsTable");
+					if (nameEraesTable.contains(active)) {
+						e.preventDefault();
+						addNameEraesRow();
+					} else if (warsTable.contains(active)) {
+						e.preventDefault();
+						addWarsRow();
+					}
+				} else if (e.key === "Delete") {
+					const active = document.activeElement;
+					const nameEraesTable = document.getElementById("nameEraesTable");
+					const warsTable = document.getElementById("warsTable");
+					if (nameEraesTable.contains(active)) {
+						const row = active.closest("tr");
+						if (row && row.rowIndex > 0) {
+							e.preventDefault();
+							row.remove();
+						}
+					} else if (warsTable.contains(active)) {
+						const row = active.closest("tr");
+						if (row && row.rowIndex > 0) {
+							e.preventDefault();
+							row.remove();
+						}
+					}
+				}
+			});
+
+			document.addEventListener("DOMContentLoaded", function () {
+				initializeNameEraesTable();
+				initializeWarsTable();
+			});
+
+			const MIN_MOTHER_AGE = 18;
+			const MAX_MOTHER_AGE_SOFT = 30;
+			const MENOPAUSE_MIN = 39;
+			const MENOPAUSE_MAX = 45;
+
+			const DEATH_AGE_MIN = 65;
+			const DEATH_AGE_MAX = 95;
+			const INFANT_DEATH_MAX_AGE = 14;
+
+			const SIBLING_CONTINUATION_CHANCE = 0.5;
+			const MAX_SIBLINGS = 5;
+			const TWIN_CHANCE = 0.03;
+			const TRIPLET_CHANCE = 0.005;
+			const TWIN_DAY_DIFFERENCE_CHANCE = 0.0001;
+
+			const BUREAU_CHANCE = 0.005;
+			const EX_SPOUSE_CHANCE = 0.15;
+			function getBureauName(birthDateStr) {
+				if (!data.era_bueroes || data.era_bueroes.length === 0) {
+					return "BUERO";
+				}
+
+				const cleanDate = birthDateStr.replace(/\//g, "").replace(" A.C.", "").substring(0, 8);
+				const dateVal = parseInt(cleanDate);
+
+				let activeName = data.era_bueroes[0].name;
+				for (const era of data.era_bueroes) {
+					if (dateVal >= parseInt(era.date)) {
+						activeName = era.name;
+					} else {
+						break;
+					}
+				}
+				return activeName;
+			}
+			function random(min, max) {
+				return Math.floor(Math.random() * (max - min + 1)) + min;
+			}
+
+			function getNamesByGender(nameArray, gender) {
+				return nameArray.filter((n) => n.gender === gender);
+			}
+
+			function weightedRandomChoice(array) {
+				if (!array || array.length === 0) return null;
+				const totalWeight = array.reduce((sum, item) => sum + (item.weight || 1), 0);
+				let rand = Math.random() * totalWeight;
+				for (let i = 0; i < array.length; i++) {
+					const weight = array[i].weight || 1;
+					rand -= weight;
+					if (rand <= 0) {
+						return array[i].name || array[i];
+					}
+				}
+				return array[array.length - 1].name || array[array.length - 1];
+			}
+
+			function weightedPlaceOfBirth(germanCities, nonGermanCities, germanProbability = 0.9923) {
+				if (Math.random() < germanProbability) {
+					return weightedRandomChoice(germanCities);
+				} else {
+					return weightedRandomChoice(nonGermanCities);
+				}
+			}
+			function getRandomBirthplace() {
+				return weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+			}
+
+			function getRandomFamilyName() {
+				return weightedRandomChoice(data.family_names);
+			}
+			function getMultiplier() {
+				const multInput = document.getElementById("lifeMultiplier");
+				return multInput ? parseFloat(multInput.value) || 1.0 : 1.0;
+			}
+			function parseDate(dateStr) {
+				const isAC = dateStr.includes("A.C.");
+				const clean = dateStr.replace(/\//g, "").replace(" A.C.", "").trim();
+
+				let year = parseInt(clean.substring(0, clean.length - 4));
+				const month = parseInt(clean.substring(clean.length - 4, clean.length - 2));
+				const day = parseInt(clean.substring(clean.length - 2));
+
+				if (isAC) {
+					year = -(year - 1);
+				}
+				return { year, month, day };
+			}
+
+			function formatDate(year, month, day) {
+				let displayYear = year;
+				let suffix = "";
+
+				if (year <= 0) {
+					displayYear = Math.abs(year - 1);
+					suffix = " A.C.";
+				}
+
+				const yStr = displayYear.toString().padStart(4, "0");
+				const mStr = month.toString().padStart(2, "0");
+				const dStr = day.toString().padStart(2, "0");
+				return `${yStr}/${mStr}/${dStr}${suffix}`;
+			}
+
+			function compareDates(d1Str, d2Str) {
+				const p1 = parseDate(d1Str);
+				const p2 = parseDate(d2Str);
+
+				if (p1.year !== p2.year) return p1.year - p2.year;
+				if (p1.month !== p2.month) return p1.month - p2.month;
+				return p1.day - p2.day;
+			}
+
+			function isDateBefore(date1, date2) {
+				return compareDates(date1, date2) < 0;
+			}
+
+			function isDateAfter(date1, date2) {
+				return compareDates(date1, date2) > 0;
+			}
+
+			function calculateAge(birthDate, currentDate) {
+				const birth = parseDate(birthDate);
+				const current = parseDate(currentDate);
+				let age = current.year - birth.year;
+				if (current.month < birth.month || (current.month === birth.month && current.day < birth.day)) {
+					age--;
+				}
+				return age;
+			}
+
+			function generateRandomDate(minYear, maxYear) {
+				const year = random(minYear, maxYear);
+				const month = random(1, 12);
+				const maxDay = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
+				const day = random(1, maxDay);
+				return formatDate(year, month, day);
+			}
+
+			function generateRandomDateInYear(year, beforeDate = null) {
+				const maxDayList = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+				let month, day;
+				if (beforeDate) {
+					const bd = parseDate(beforeDate);
+					if (bd.year === year) {
+						month = random(1, bd.month);
+						if (month === bd.month) {
+							day = random(1, bd.day);
+						} else {
+							day = random(1, maxDayList[month - 1]);
+						}
+					} else {
+						month = random(1, 12);
+						day = random(1, maxDayList[month - 1]);
+					}
+				} else {
+					month = random(1, 12);
+					day = random(1, maxDayList[month - 1]);
+				}
+				return formatDate(year, month, day);
+			}
+
+			function getMotherAgeAtBirth() {
+				const m = getMultiplier();
+				const r = Math.random();
+
+				const minAge = Math.round(MIN_MOTHER_AGE * m);
+				const softMax = Math.round(MAX_MOTHER_AGE_SOFT * m);
+				const menopauseMin = Math.round(MENOPAUSE_MIN * m);
+				const absoluteMax = Math.round(35 * m);
+				const lateStart = Math.round(36 * m);
+
+				if (r < 0.7) {
+					return random(softMax, absoluteMax);
+				} else if (r < 0.9) {
+					return random(minAge, softMax - 1);
+				} else {
+					return random(lateStart, menopauseMin - 1);
+				}
+			}
+
+			function getMenopauseAge() {
+				const m = getMultiplier();
+				return random(Math.round(MENOPAUSE_MIN * m), Math.round(MENOPAUSE_MAX * m));
+			}
+
+			function isInWarPeriod(dateStr) {
+				const d = parseDate(dateStr);
+				const wars = readWarsFromTable();
+				for (const war of wars) {
+					if (d.year >= war.start.year && d.year <= war.end.year) {
+						if (d.year === war.start.year) {
+							if (d.month < war.start.month || (d.month === war.start.month && d.day < war.start.day)) {
+								continue;
+							}
+						}
+						if (d.year === war.end.year) {
+							if (d.month > war.end.month || (d.month === war.end.month && d.day > war.end.day)) {
+								continue;
+							}
+						}
+						return true;
+					}
+				}
+				return false;
+			}
+			function getLastChildBirthDate(person) {
+				if (!person.children || person.children.length === 0) return null;
+				const sorted = [...person.children].sort((a, b) => compareDates(a.birthDate, b.birthDate));
+				return sorted[sorted.length - 1].birthDate;
+			}
+
+			function processDeath(person, ageAtDeath, referenceDate, reason) {
+				const birthYear = parseDate(person.birthDate).year;
+				const deathYear = birthYear + ageAtDeath;
+
+				let deathPlace = person.birthPlace;
+
+				return {
+					died: true,
+					deathDate: generateRandomDateInYear(deathYear, referenceDate),
+					deathPlace: deathPlace,
+					inMilitary: false,
+					cause: reason,
+				};
+			}
+
+			function getChildhoodMortalityRate(age, effectiveYear) {
+				let baseChance = 0;
+
+				if (age === 0) baseChance = 0.18;
+				else if (age === 1) baseChance = 0.1;
+				else if (age < 4) baseChance = 0.06;
+				else if (age < 6) baseChance = 0.04;
+				else if (age < 10) baseChance = 0.02;
+				else baseChance = 0.01;
+
+				let multiplier = 1.0;
+				if (effectiveYear < 1750) multiplier = 1.4;
+				else if (effectiveYear < 1850) multiplier = 1.0;
+				else if (effectiveYear < 1900) multiplier = 0.6;
+				else if (effectiveYear < 1950) multiplier = 0.3;
+				else multiplier = 0.05;
+
+				return baseChance * multiplier;
+			}
+			function checkInfantDeath(person, referenceDate) {
+				if (person.died) return { died: false };
+				if (person.infantCheckDone) return { died: false };
+
+				const m = getMultiplier();
+
+				if (person.isAncestor || person.spouse || (person.children && person.children.length > 0)) {
+					person.infantCheckDone = true;
+					return { died: false };
+				}
+
+				const currentAge = calculateAge(person.birthDate, referenceDate);
+				const scaledInfantMax = Math.round(INFANT_DEATH_MAX_AGE * m);
+
+				if (person.lastInfantCheckAge === undefined) person.lastInfantCheckAge = -1;
+
+				const startCheckAge = person.lastInfantCheckAge + 1;
+				const endCheckAge = Math.min(currentAge, scaledInfantMax);
+
+				const referenceYearStr = document.getElementById("birthDate").value.substring(0, 4);
+				const referenceYear = parseInt(referenceYearStr) || 1935;
+				const techYearInput = document.getElementById("technologyYearInput");
+				const technologyYear = parseInt(techYearInput.value) || referenceYear;
+				const technologyOffset = technologyYear - referenceYear;
+				const birthDateParsed = parseDate(person.birthDate);
+
+				for (let age = startCheckAge; age <= endCheckAge; age++) {
+					const normalizedAge = Math.round(age / m);
+					const yearBeingLived = birthDateParsed.year + age + technologyOffset;
+
+					let mortalityChance = getChildhoodMortalityRate(normalizedAge, yearBeingLived);
+
+					if (Math.random() < mortalityChance / m) {
+						const deathYear = birthDateParsed.year + age;
+						let deathDate;
+
+						if (age === 0) {
+							const deathMonth = random(birthDateParsed.month, 12);
+							let deathDay;
+							if (deathMonth === birthDateParsed.month) {
+								const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][deathMonth - 1];
+								deathDay = random(birthDateParsed.day, daysInMonth);
+							} else {
+								const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][deathMonth - 1];
+								deathDay = random(1, daysInMonth);
+							}
+							deathDate = formatDate(deathYear, deathMonth, deathDay);
+						} else {
+							deathDate = generateRandomDateInYear(deathYear, referenceDate);
+						}
+
+						if (isDateAfter(deathDate, referenceDate)) {
+							continue;
+						}
+
+						let deathPlace = person.birthPlace;
+						if (person.mother && person.mother.children && person.mother.children.length > 1) {
+							const olderSiblings = person.mother.children.filter((c) => isDateBefore(c.birthDate, person.birthDate));
+							if (olderSiblings.length > 0) {
+								deathPlace = olderSiblings[olderSiblings.length - 1].birthPlace;
+							}
+						}
+
+						return { died: true, deathDate: deathDate, deathPlace: deathPlace };
+					}
+				}
+
+				person.lastInfantCheckAge = endCheckAge;
+				if (endCheckAge >= scaledInfantMax) {
+					person.infantCheckDone = true;
+				}
+				return { died: false };
+			}
+			function checkWarDeath(person, referenceDate) {
+				const m = getMultiplier();
+				const refDate = parseDate(referenceDate);
+				const minSoldierAge = Math.round(SOLDIER_AGE_MIN * m);
+				const serviceWindow = SOLDIER_AGE_MAX - SOLDIER_AGE_MIN;
+				const maxSoldierAge = minSoldierAge + serviceWindow;
+
+				const wars = readWarsFromTable();
+				for (const war of wars) {
+					for (let year = war.start.year; year <= Math.min(war.end.year, refDate.year); year++) {
+						const checkDate = formatDate(year, 6, 15);
+						if (isDateAfter(checkDate, referenceDate)) continue;
+						if (isDateBefore(checkDate, person.birthDate)) continue;
+						const ageAtCheck = calculateAge(person.birthDate, checkDate);
+						if (ageAtCheck >= minSoldierAge && ageAtCheck <= maxSoldierAge) {
+							const deathChance = person.gender === 0 ? FEMALE_WAR_DEATH_CHANCE : MALE_WAR_DEATH_CHANCE;
+							if (Math.random() < deathChance) {
+								let deathMonth, deathDay;
+								if (year === war.start.year) {
+									deathMonth = random(war.start.month, 12);
+									if (deathMonth === war.start.month) {
+										const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][deathMonth - 1];
+										deathDay = random(war.start.day, daysInMonth);
+									} else {
+										deathDay = random(1, [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][deathMonth - 1]);
+									}
+								} else if (year === war.end.year) {
+									deathMonth = random(1, war.end.month);
+									if (deathMonth === war.end.month) {
+										deathDay = random(1, war.end.day);
+									} else {
+										deathDay = random(1, [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][deathMonth - 1]);
+									}
+								} else {
+									deathMonth = random(1, 12);
+									deathDay = random(1, [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][deathMonth - 1]);
+								}
+
+								const potentialDeathDate = formatDate(year, deathMonth, deathDay);
+
+								if (person.children && person.children.length > 0) {
+									let hasChildAfterDeath = false;
+									for (const child of person.children) {
+										if (isDateAfter(child.birthDate, potentialDeathDate)) {
+											hasChildAfterDeath = true;
+											break;
+										}
+									}
+									if (hasChildAfterDeath) {
+										continue;
+									}
+								}
+
+								const lastChildDate = getLastChildBirthDate(person);
+								if (lastChildDate && isDateBefore(potentialDeathDate, lastChildDate)) {
+									continue;
+								}
+								return {
+									died: true,
+									deathDate: potentialDeathDate,
+									deathPlace: weightedRandomChoice(data.places_of_birth),
+									inMilitary: true,
+								};
+							}
+						}
+					}
+				}
+				return { died: false };
+			}
+
+			function checkNaturalDeath(person, referenceDate) {
+				const m = getMultiplier();
+
+				const currentAge = calculateAge(person.birthDate, referenceDate);
+				const AGING_START_AGE = 25 * m;
+
+				if (currentAge < AGING_START_AGE) return { died: false };
+				if (person.lastHealthCheckAge >= currentAge) return { died: false };
+
+				const referenceYearStr = document.getElementById("birthDate").value.substring(0, 4);
+				const referenceYear = parseInt(referenceYearStr) || 1935;
+				const techYearInput = document.getElementById("technologyYearInput");
+				const technologyYear = parseInt(techYearInput.value) || referenceYear;
+				const technologyOffset = technologyYear - referenceYear;
+				const actualBirthYear = parseDate(person.birthDate).year;
+
+				const effectiveBirthYear = actualBirthYear + technologyOffset;
+
+				const lastChildDate = getLastChildBirthDate(person);
+
+				let eraStress = 1.0;
+				let tragedyChance = 0.001;
+				let decayStartOffset = 0;
+
+				if (effectiveBirthYear < 1700) {
+					eraStress = 3.0;
+					tragedyChance = 0.05;
+					decayStartOffset = -10;
+				} else if (effectiveBirthYear < 1800) {
+					eraStress = 2.2;
+					tragedyChance = 0.035;
+					decayStartOffset = -5;
+				} else if (effectiveBirthYear < 1860) {
+					eraStress = 1.6;
+					tragedyChance = 0.015;
+					decayStartOffset = 0;
+				} else if (effectiveBirthYear < 1920) {
+					eraStress = 1.2;
+					tragedyChance = 0.005;
+					decayStartOffset = 0;
+				} else {
+					eraStress = 0.9;
+					tragedyChance = 0.001;
+					decayStartOffset = 5;
+				}
+
+				tragedyChance = tragedyChance / m;
+				decayStartOffset = decayStartOffset * m;
+				if (m > 10) eraStress = Math.min(eraStress, 1.1);
+				const startSimAge = person.lastHealthCheckAge > 0 ? person.lastHealthCheckAge + 1 : AGING_START_AGE;
+
+				for (let simAge = startSimAge; simAge <= currentAge; simAge++) {
+					const simYear = actualBirthYear + simAge;
+					const simDateStr = formatDate(simYear, 1, 1);
+
+					let isSafe = false;
+					if (lastChildDate) {
+						if (isDateBefore(simDateStr, lastChildDate)) {
+							isSafe = true;
+						}
+					}
+					if (person.spouse && simAge < 18 * m) {
+						continue;
+					}
+					if (!isSafe && Math.random() < tragedyChance) {
+						const reasons = ["Fever", "Consumption", "Accident", "Infection", "Sudden Illness"];
+						const reason = reasons[Math.floor(Math.random() * reasons.length)];
+						return processDeath(person, simAge, referenceDate, reason);
+					}
+
+					let agePenaltyThreshold = 40 * m + decayStartOffset;
+					let agePenalty = Math.max(0, (simAge - agePenaltyThreshold) / (40 * m));
+
+					const deathThreshold = DEATH_AGE_MAX * m;
+					if (simAge > deathThreshold) {
+						agePenalty += (simAge - deathThreshold) / (5 * m);
+					}
+
+					let constitutionProtection = Math.min(person.constitution * 0.4, eraStress * 0.7);
+					let decayAmount = ((1 + agePenalty) * eraStress - constitutionProtection) / m;
+					person.health -= Math.max(0.01 / m, decayAmount);
+
+					if (person.health <= 0) {
+						if (isSafe) {
+							person.health = 5;
+							person.isDoomed = true;
+						} else {
+							if (person.isDoomed) {
+								decayAmount *= 1 + 1 / m;
+							}
+							return processDeath(person, simAge, referenceDate, "Natural Causes");
+						}
+					}
+
+					person.lastHealthCheckAge = simAge;
+
+					if (person.health <= 0) {
+						return processDeath(person, simAge, referenceDate, "Natural Causes");
+					}
+				}
+
+				return { died: false };
+			}
+			function checkPeacetimeMilitaryDeath(person, referenceDate) {
+				if (person.gender === 1) return { died: false };
+				const m = getMultiplier();
+				const refDate = parseDate(referenceDate);
+				const birthDate = parseDate(person.birthDate);
+
+				// Accordion: The window of service is stretched proportionally
+				const minS = Math.round(SOLDIER_AGE_MIN * m);
+				const maxS = Math.round(SOLDIER_AGE_MAX * m);
+
+				// Realism: 1 year in the army is equally dangerous for a human or an elf
+				const deathChance = PEACETIME_MILITARY_DEATH_CHANCE;
+
+				for (let year = birthDate.year + minS; year <= birthDate.year + maxS && year <= refDate.year; year++) {
+					const checkDate = formatDate(year, 6, 15);
+					if (isDateAfter(checkDate, referenceDate)) continue;
+					if (isInWarPeriod(checkDate)) continue;
+
+					if (Math.random() < deathChance) {
+						const deathMonth = random(1, 12);
+						const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][deathMonth - 1];
+						const deathDay = random(1, daysInMonth);
+						const deathDate = formatDate(year, deathMonth, deathDay);
+
+						if (isDateAfter(deathDate, referenceDate)) continue;
+
+						const lastChildDate = getLastChildBirthDate(person);
+						if (lastChildDate && isDateBefore(deathDate, lastChildDate)) {
+							continue;
+						}
+
+						return {
+							died: true,
+							deathDate: deathDate,
+							deathPlace: weightedRandomChoice(data.places_of_birth),
+							inMilitary: true,
+						};
+					}
+				}
+				return { died: false };
+			}
+			function applyDeathLogic(person, referenceDate) {
+				if (person.died) return;
+				if (person.deathFromInput) return;
+
+				const m = getMultiplier();
+				const lastChildDate = getLastChildBirthDate(person);
+
+				const infantResult = checkInfantDeath(person, referenceDate);
+				if (infantResult.died) {
+					let dDate = infantResult.deathDate;
+					if (lastChildDate) {
+						if (person.gender === 0 && isDateBefore(dDate, lastChildDate)) {
+							dDate = lastChildDate;
+						} else if (person.gender === 1) {
+							const conceptionDate = adjustDateByMonths(lastChildDate, -(9 * m));
+							if (isDateBefore(dDate, conceptionDate)) {
+								dDate = adjustDateByMonths(conceptionDate, 1);
+							}
+						}
+					}
+					person.died = true;
+					person.deathDate = dDate;
+					person.deathPlace = infantResult.deathPlace;
+					person.inMilitary = false;
+					return;
+				}
+
+				const warResult = checkWarDeath(person, referenceDate);
+				if (warResult.died) {
+					let dDate = warResult.deathDate;
+					if (lastChildDate) {
+						if (person.gender === 0 && isDateBefore(dDate, lastChildDate)) {
+							dDate = lastChildDate;
+						} else if (person.gender === 1) {
+							const conceptionDate = adjustDateByMonths(lastChildDate, -(9 * m));
+							if (isDateBefore(dDate, conceptionDate)) {
+								dDate = adjustDateByMonths(conceptionDate, 1);
+							}
+						}
+					}
+					person.died = true;
+					person.deathDate = dDate;
+					person.deathPlace = warResult.deathPlace;
+					person.inMilitary = warResult.inMilitary;
+					return;
+				}
+
+				const peacetimeResult = checkPeacetimeMilitaryDeath(person, referenceDate);
+				if (peacetimeResult.died) {
+					let dDate = peacetimeResult.deathDate;
+					if (lastChildDate) {
+						if (person.gender === 0 && isDateBefore(dDate, lastChildDate)) {
+							dDate = lastChildDate;
+						} else if (person.gender === 1) {
+							const conceptionDate = adjustDateByMonths(lastChildDate, -(9 * m));
+							if (isDateBefore(dDate, conceptionDate)) {
+								dDate = adjustDateByMonths(conceptionDate, 1);
+							}
+						}
+					}
+					person.died = true;
+					person.deathDate = dDate;
+					person.deathPlace = peacetimeResult.deathPlace;
+					person.inMilitary = peacetimeResult.inMilitary;
+					return;
+				}
+
+				const naturalResult = checkNaturalDeath(person, referenceDate);
+				if (naturalResult.died) {
+					let dDate = naturalResult.deathDate;
+					if (lastChildDate) {
+						if (person.gender === 0 && isDateBefore(dDate, lastChildDate)) {
+							dDate = lastChildDate;
+						} else if (person.gender === 1) {
+							const conceptionDate = adjustDateByMonths(lastChildDate, -(9 * m));
+							if (isDateBefore(dDate, conceptionDate)) {
+								dDate = adjustDateByMonths(conceptionDate, 1);
+							}
+						}
+					}
+					person.died = true;
+					person.deathDate = dDate;
+					person.deathPlace = naturalResult.deathPlace;
+					person.inMilitary = false;
+				}
+			}
+
+			function createPerson(gender, birthDate, birthPlace, familyName) {
+				return {
+					gender: gender,
+					birthDate: birthDate,
+					birthPlace: birthPlace,
+					familyName: familyName,
+					birthFamilyName: familyName,
+					givenNames: null,
+					mother: null,
+					father: null,
+					motherName: null,
+					fatherName: null,
+					motherIsBureau: false,
+					fatherIsBureau: false,
+					spouse: null,
+					exSpouses: [],
+					children: [],
+					died: false,
+					deathDate: null,
+					deathPlace: null,
+					inMilitary: false,
+					constitution: random(-3, 3),
+					health: 100,
+					lastHealthCheckAge: 0,
+					isAncestor: false,
+				};
+			}
+
+			function generateBureauParent(gender, childBirthDate) {
+				if (Math.random() < BUREAU_CHANCE) {
+					return { isBureau: true, name: getBureauName(childBirthDate) };
+				}
+				return { isBureau: false, name: null };
+			}
+
+			function getHighWeightName(gender) {
+				const nameList = getNamesByGender(data.first_names, gender);
+				const highWeight = nameList.filter((n) => n.weight >= 0.25);
+				if (highWeight.length > 0) {
+					return weightedRandomChoice(highWeight);
+				}
+				return weightedRandomChoice(nameList);
+			}
+			function generateExSpouseIfNeeded(person, referenceDate, children, buildTree = false) {
+				const m = getMultiplier();
+				if (children.length < 2) return null;
+				if (Math.random() >= EX_SPOUSE_CHANCE) return null;
+
+				const splitIndex = Math.floor(children.length / 2);
+				if (splitIndex < 1) return null;
+
+				const exChildren = children.slice(0, splitIndex);
+				const currentChildren = children.slice(splitIndex);
+
+				const firstExChildDate = parseDate(exChildren[0].birthDate);
+				const lastExChildDate = parseDate(exChildren[exChildren.length - 1].birthDate);
+				const firstCurrentChildDate = parseDate(currentChildren[0].birthDate);
+
+				const gapYears = firstCurrentChildDate.year - lastExChildDate.year;
+				if (gapYears < 2 * m) return null;
+
+				const exSpouseGender = person.gender === 1 ? 0 : 1;
+				const exSpouseAge = random(Math.round(18 * m), Math.round(35 * m));
+				const exSpouseBirthYear = firstExChildDate.year - exSpouseAge;
+				const exSpouseBirthDate = generateRandomDateInYear(exSpouseBirthYear);
+				const exSpouseBirthPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+				const exSpouseBirthFamilyName = weightedRandomChoice(data.family_names);
+
+				const exSpouse = createPerson(exSpouseGender, exSpouseBirthDate, exSpouseBirthPlace, exSpouseBirthFamilyName);
+				exSpouse.birthFamilyName = exSpouseBirthFamilyName;
+
+				generateGivenNamesForPerson(exSpouse, []);
+
+				for (const child of exChildren) {
+					if (person.gender === 0) {
+						child.father = exSpouse;
+					} else {
+						child.mother = exSpouse;
+					}
+				}
+				exSpouse.children = [...exChildren];
+
+				const exSpouseRemarriageChance = 0.4;
+				let exSpouseNewSpouse = null;
+				let exSpouseNewChildren = [];
+
+				if (Math.random() < exSpouseRemarriageChance) {
+					const lastExChildYear = lastExChildDate.year;
+					const remarriageYear = lastExChildYear + random(Math.round(2 * m), Math.round(8 * m));
+					const refDate = parseDate(referenceDate);
+
+					if (remarriageYear < refDate.year) {
+						const newSpouseGender = exSpouseGender === 1 ? 0 : 1;
+						const newSpouseAge = calculateAge(exSpouseBirthDate, formatDate(remarriageYear, 6, 15)) + random(-5, 5);
+						const newSpouseBirthYear = remarriageYear - Math.max(Math.round(18 * m), newSpouseAge);
+						const newSpouseBirthDate = generateRandomDateInYear(newSpouseBirthYear);
+						const newSpouseBirthPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+						const newSpouseBirthFamilyName = weightedRandomChoice(data.family_names);
+
+						exSpouseNewSpouse = createPerson(newSpouseGender, newSpouseBirthDate, newSpouseBirthPlace, newSpouseBirthFamilyName);
+						exSpouseNewSpouse.birthFamilyName = newSpouseBirthFamilyName;
+						generateGivenNamesForPerson(exSpouseNewSpouse, []);
+
+						exSpouse.spouse = exSpouseNewSpouse;
+						exSpouseNewSpouse.spouse = exSpouse;
+
+						if (exSpouseGender === 0) {
+							exSpouseNewSpouse.familyName = exSpouse.familyName;
+						} else {
+							exSpouse.familyName = exSpouseNewSpouse.familyName;
+						}
+
+						const exMother = exSpouseGender === 0 ? exSpouse : exSpouseNewSpouse;
+						const exFather = exSpouseGender === 1 ? exSpouse : exSpouseNewSpouse;
+						exSpouseNewChildren = generateChildrenForCouple(exMother, exFather, referenceDate, []);
+
+						for (const child of exSpouseNewChildren) {
+							applyDeathLogic(child, referenceDate);
+						}
+
+						applyDeathLogic(exSpouseNewSpouse, referenceDate);
+					}
+				}
+
+				let exSpouseTree = null;
+
+				if (buildTree) {
+					exSpouseTree = generateSpouseTree(exSpouse, referenceDate);
+				}
+
+				applyDeathLogic(exSpouse, referenceDate);
+
+				return {
+					exSpouse: exSpouse,
+					exSpouseTree: exSpouseTree,
+					exSpouseNewSpouse: exSpouseNewSpouse,
+					exSpouseNewChildren: [],
+					exChildren: exChildren,
+					currentChildren: currentChildren,
+				};
+			}
+
+			function getCousinLabel(selfGeneration, cousinGeneration, commonAncestorDistance) {
+				const genDiff = Math.abs(selfGeneration - cousinGeneration);
+				const cousinDegree = Math.min(selfGeneration, cousinGeneration) - 1;
+
+				if (cousinDegree < 1) return null;
+
+				let label = "";
+				if (cousinDegree === 1) label = "1ST COUSIN";
+				else if (cousinDegree === 2) label = "2ND COUSIN";
+				else if (cousinDegree === 3) label = "3RD COUSIN";
+				else label = `${cousinDegree}TH COUSIN`;
+
+				if (genDiff === 1) label += " ONCE RE‑MOVED";
+				else if (genDiff === 2) label += " TWICE RE‑MOVED";
+				else if (genDiff > 2) label += ` ${genDiff} TIMES RE‑MOVED`;
+
+				return label;
+			}
+
+			function generateInlineParentNames(person, grandparents = []) {
+				if (person.parentsFromInput) return;
+				if (person.motherName && person.fatherName) return;
+				const motherGender = 0;
+				const fatherGender = 1;
+				const motherNameList = getNamesByGender(data.first_names, motherGender);
+				const fatherNameList = getNamesByGender(data.first_names, fatherGender);
+				let motherName, fatherName;
+
+				const bureauMother = generateBureauParent(0, person.birthDate);
+				const bureauFather = generateBureauParent(1, person.birthDate);
+
+				if (bureauMother.isBureau) {
+					person.motherIsBureau = true;
+					motherName = getBureauName(person.birthDate);
+				} else if (grandparents.length > 0 && Math.random() < 0.3) {
+					const femaleGps = grandparents.filter((gp) => gp && gp.gender === 0 && gp.givenNames);
+					if (femaleGps.length > 0) {
+						const gp = femaleGps[Math.floor(Math.random() * femaleGps.length)];
+						motherName = gp.givenNames.split(" ")[0];
+					}
+				}
+
+				if (bureauFather.isBureau) {
+					person.fatherIsBureau = true;
+					fatherName = getBureauName(person.birthDate);
+				} else if (grandparents.length > 0 && Math.random() < 0.3) {
+					const maleGps = grandparents.filter((gp) => gp && gp.gender === 1 && gp.givenNames);
+					if (maleGps.length > 0) {
+						const gp = maleGps[Math.floor(Math.random() * maleGps.length)];
+						fatherName = gp.givenNames.split(" ")[0];
+					}
+				}
+
+				if (!motherName) {
+					if (person.motherIsBureau) {
+						motherName = getBureauName(person.birthDate);
+					} else {
+						motherName = weightedRandomChoice(motherNameList);
+					}
+				}
+				if (!fatherName) {
+					if (person.fatherIsBureau) {
+						fatherName = getBureauName(person.birthDate);
+					} else {
+						fatherName = weightedRandomChoice(fatherNameList);
+					}
+				}
+				person.motherName = motherName;
+				person.fatherName = fatherName;
+			}
+			function generateSpouseForSibling(sibling, referenceDate) {
+				const m = getMultiplier();
+				const sibAge = calculateAge(sibling.birthDate, referenceDate);
+
+				if (sibling.died) {
+					// If they died before 18, they absolutely cannot marry
+					const ageAtDeath = calculateAge(sibling.birthDate, sibling.deathDate);
+					if (ageAtDeath < 18 * m) return;
+				}
+
+				if (sibAge < 18 * m) return;
+
+				if (sibling.died && isDateBefore(sibling.deathDate, referenceDate)) {
+					const deathAge = calculateAge(sibling.birthDate, sibling.deathDate);
+					if (deathAge < 18 * m) return;
+				}
+				const pM = Math.min(0.95, 0.05 + (0.035 / m) * (sibAge - 18 * m));
+				if (Math.random() >= pM) return;
+
+				const spouseGender = sibling.gender === 1 ? 0 : 1;
+
+				const spouseAge = sibAge + random(-5, 5);
+				const refDate = parseDate(referenceDate);
+				const spouseBirthYear = refDate.year - spouseAge;
+				const spouseBirthDate = generateRandomDateInYear(spouseBirthYear);
+				const spouse = createPerson(spouseGender, spouseBirthDate, weightedPlaceOfBirth(data.places_of_birth, []), weightedRandomChoice(data.family_names));
+				generateGivenNamesForPerson(spouse, []);
+
+				sibling.spouse = spouse;
+				spouse.spouse = sibling;
+
+				generateChildrenForSibling(sibling, referenceDate);
+
+				if (sibling.children && sibling.children.length >= 2 && Math.random() < EX_SPOUSE_CHANCE) {
+					const exResult = generateExSpouseIfNeeded(sibling, referenceDate, sibling.children, false);
+					if (exResult) {
+						sibling.exSpouses.push({
+							exSpouse: exResult.exSpouse,
+							marriedDate: null,
+							endDate: null,
+						});
+						if (sibling.spouse) {
+							sibling.spouse.children = exResult.currentChildren;
+						}
+					}
+				}
+			}
+
+			function generateChildrenForSibling(sibling, referenceDate) {
+				const m = getMultiplier();
+				if (!sibling.spouse) return;
+				const sibMother = sibling.gender === 0 ? sibling : sibling.spouse;
+				const sibFather = sibling.gender === 1 ? sibling : sibling.spouse;
+
+				// 1. CHECK: If Mother died young, she cannot have children
+				if (sibMother.died) {
+					const ageAtDeath = calculateAge(sibMother.birthDate, sibMother.deathDate);
+					if (ageAtDeath < 18 * m) return;
+				}
+
+				const refDate = parseDate(referenceDate);
+				const motherAge = calculateAge(sibMother.birthDate, referenceDate);
+				if (motherAge < 18 * m) return;
+				const marriageAge = random(18, Math.min(motherAge, 35 * m));
+				const yearsMarried = motherAge - marriageAge;
+				if (yearsMarried < 1) return;
+				const pC = Math.min(0.85, 0.1 + (0.03 / m) * yearsMarried);
+				if (Math.random() >= pC) return;
+				let numChildren = 1;
+				for (let i = 0; i < 4; i++) {
+					if (Math.random() < 0.6) numChildren++;
+					else break;
+				}
+				const motherBirth = parseDate(sibMother.birthDate);
+				const fatherBirth = parseDate(sibFather.birthDate);
+				const menopauseAge = getMenopauseAge();
+				const motherMinChildYear = motherBirth.year + Math.round(MIN_MOTHER_AGE * m);
+				let motherMaxChildYear = Math.min(motherBirth.year + menopauseAge, refDate.year);
+				if (sibMother.died && sibMother.deathDate) {
+					const motherDeath = parseDate(sibMother.deathDate);
+					motherMaxChildYear = Math.min(motherMaxChildYear, motherDeath.year);
+				}
+				const fatherMinChildYear = fatherBirth.year + Math.round(16 * m);
+				const marriageYear = refDate.year - yearsMarried;
+				const minChildYear = Math.max(motherMinChildYear, marriageYear, fatherMinChildYear);
+				if (motherMaxChildYear < minChildYear) return;
+				let birthDates = [];
+				let usedFirstNames = new Set();
+				const familyName = sibMother.familyName;
+				let previousPlace = null;
+				const isForeignPlace = (place) => data.international_places && data.international_places.includes(place);
+				let inForeignTerritory = false;
+				const children = [];
+				for (let i = 0; i < numChildren; i++) {
+					let attempts = 0;
+					let success = false;
+					let childBirthDate;
+					while (!success && attempts < 100) {
+						attempts++;
+						const birthYear = random(minChildYear, motherMaxChildYear);
+						childBirthDate = generateRandomDateInYear(birthYear, birthYear === refDate.year ? referenceDate : null);
+
+						if (isDateAfter(childBirthDate, referenceDate)) continue;
+						if (sibMother.died && sibMother.deathDate && isDateAfter(childBirthDate, sibMother.deathDate)) continue;
+
+						if (sibFather.died && sibFather.deathDate) {
+							const childBirth = parseDate(childBirthDate);
+							const fatherDeath = parseDate(sibFather.deathDate);
+
+							const monthsDiff = (childBirth.year - fatherDeath.year) * 12 + (childBirth.month - fatherDeath.month);
+
+							if (monthsDiff > 9 * m) continue;
+						}
+						let validDate = true;
+						for (const existing of birthDates) {
+							if (!isAtLeast10MonthsApart(existing, childBirthDate)) {
+								validDate = false;
+								break;
+							}
+						}
+						if (validDate) success = true;
+					}
+					if (!success) continue;
+					const childGender = Math.random() < 0.5 ? 1 : 0;
+					let childPlace;
+					if (previousPlace && Math.random() < 0.9) {
+						childPlace = previousPlace;
+					} else {
+						if (inForeignTerritory) {
+							if (Math.random() < 0.9) {
+								childPlace = data.international_places[Math.floor(Math.random() * data.international_places.length)];
+							} else {
+								childPlace = weightedPlaceOfBirth(data.places_of_birth, []);
+								inForeignTerritory = false;
+							}
+						} else if (Math.random() < 0.3) {
+							childPlace = Math.random() < 0.5 ? sibMother.birthPlace : sibFather.birthPlace;
+						} else {
+							childPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+							if (isForeignPlace(childPlace)) inForeignTerritory = true;
+						}
+					}
+					previousPlace = childPlace;
+					const child = createPerson(childGender, childBirthDate, childPlace, familyName);
+
+					// 3. ASSIGN PARENTS FIRST (Needed for death location logic)
+					child.mother = sibMother;
+					child.father = sibFather;
+
+					// 4. THEN APPLY DEATH LOGIC
+					applyDeathLogic(child, referenceDate);
+
+					generateGivenNamesForPerson(child, [], usedFirstNames);
+					const firstName = child.givenNames.split(" ")[0];
+					usedFirstNames.add(firstName);
+					birthDates.push(childBirthDate);
+					children.push(child);
+				}
+				children.sort((a, b) => compareDates(a.birthDate, b.birthDate));
+				sibMother.children = children;
+				sibFather.children = children;
+			}
+			function generateSpouseForSelf(self, referenceDate, grandparents = []) {
+				const m = getMultiplier();
+				const selfAge = calculateAge(self.birthDate, referenceDate);
+				if (selfAge < 18 * m) return null;
+				const pM = Math.min(0.95, 0.05 + (0.035 / m) * (selfAge - 18 * m));
+				if (Math.random() >= pM) return null;
+
+				const spouseGender = self.gender === 1 ? 0 : 1;
+				const rand = Math.random();
+				let spouseAgeDiff;
+				if (rand < 0.44) {
+					spouseAgeDiff = -random(0, Math.round(5 * m));
+				} else if (rand < 0.88) {
+					spouseAgeDiff = random(0, Math.round(5 * m));
+				} else {
+					spouseAgeDiff = Math.random() < 0.5 ? -random(Math.round(6 * m), Math.round(15 * m)) : random(Math.round(6 * m), Math.round(15 * m));
+				}
+
+				let spouseAge = selfAge + spouseAgeDiff;
+				if (spouseAge < 18 * m) spouseAge = Math.round(18 * m);
+				const refDate = parseDate(referenceDate);
+				const spouseBirthYear = refDate.year - spouseAge;
+				const spouseBirthDate = generateRandomDateInYear(spouseBirthYear);
+				const spouseBirthPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+				const spouseBirthFamilyName = weightedRandomChoice(data.family_names);
+
+				const spouse = createPerson(spouseGender, spouseBirthDate, spouseBirthPlace, spouseBirthFamilyName);
+				generateGivenNamesForPerson(spouse, grandparents);
+
+				self.spouse = spouse;
+				spouse.spouse = self;
+
+				if (self.gender === 0) {
+					spouse.familyName = self.familyName;
+				} else {
+					self.familyName = spouse.familyName;
+				}
+
+				return spouse;
+			}
+			function generateChildrenForCouple(mother, father, referenceDate, grandparents = []) {
+				const m = getMultiplier();
+				const children = [];
+				const refDate = parseDate(referenceDate);
+				const motherAge = calculateAge(mother.birthDate, referenceDate);
+				const fatherAge = calculateAge(father.birthDate, referenceDate);
+
+				const marriageAge = random(Math.round(18 * m), Math.round(Math.min(motherAge, 40 * m)));
+				const yearsMarried = motherAge - marriageAge;
+				if (yearsMarried < 1) return children;
+
+				const pC = Math.min(0.9, 0.1 + (0.03 / m) * yearsMarried);
+				if (Math.random() >= pC) return children;
+
+				let numChildren = 1;
+				for (let i = 0; i < 5; i++) {
+					if (Math.random() < 0.7) numChildren++;
+					else break;
+				}
+
+				const motherBirth = parseDate(mother.birthDate);
+				const fatherBirth = parseDate(father.birthDate);
+				const menopauseAge = getMenopauseAge();
+
+				const scaledMinMotherAge = Math.round(MIN_MOTHER_AGE * m);
+				const motherMinChildYear = motherBirth.year + scaledMinMotherAge;
+
+				let motherMaxChildYear = Math.min(motherBirth.year + menopauseAge, refDate.year);
+				if (mother.died && mother.deathDate) {
+					const motherDeath = parseDate(mother.deathDate);
+					motherMaxChildYear = Math.min(motherMaxChildYear, motherDeath.year);
+				}
+				const fatherMinChildYear = fatherBirth.year + Math.round(16 * m);
+				const marriageYear = refDate.year - yearsMarried;
+				const minChildYear = Math.max(motherMinChildYear, marriageYear, fatherMinChildYear);
+
+				if (motherMaxChildYear < minChildYear) return children;
+
+				let birthDates = [];
+				let usedFirstNames = new Set();
+				const familyName = mother.familyName;
+				let previousChildPlace = null;
+				const isForeignPlace = (place) => data.international_places && data.international_places.includes(place);
+				let inForeignTerritory = false;
+				for (let i = 0; i < numChildren; i++) {
+					let attempts = 0;
+					let success = false;
+					let childBirthDate;
+					while (!success && attempts < 100) {
+						attempts++;
+						const birthYear = random(minChildYear, motherMaxChildYear);
+						childBirthDate = generateRandomDateInYear(birthYear, birthYear === refDate.year ? referenceDate : null);
+						if (isDateAfter(childBirthDate, referenceDate)) continue;
+						if (mother.died && mother.deathDate && isDateAfter(childBirthDate, mother.deathDate)) continue;
+						if (father.died && father.deathDate) {
+							const childBirth = parseDate(childBirthDate);
+							const fatherDeath = parseDate(father.deathDate);
+
+							const monthsDiff = (childBirth.year - fatherDeath.year) * 12 + (childBirth.month - fatherDeath.month);
+
+							if (monthsDiff > 9 * m) continue;
+						}
+						let validDate = true;
+						for (const existing of birthDates) {
+							if (!isAtLeast10MonthsApart(existing, childBirthDate)) {
+								validDate = false;
+								break;
+							}
+						}
+						if (validDate) success = true;
+					}
+					if (!success) continue;
+					const childGender = Math.random() < 0.5 ? 1 : 0;
+					let childPlace;
+					if (previousChildPlace && Math.random() < 0.9) {
+						childPlace = previousChildPlace;
+					} else {
+						if (inForeignTerritory) {
+							if (Math.random() < 0.9) {
+								childPlace = data.international_places[Math.floor(Math.random() * data.international_places.length)];
+							} else {
+								childPlace = weightedPlaceOfBirth(data.places_of_birth, []);
+								inForeignTerritory = false;
+							}
+						} else if (Math.random() < 0.3) {
+							childPlace = Math.random() < 0.5 ? mother.birthPlace : father.birthPlace;
+						} else {
+							childPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+							if (isForeignPlace(childPlace)) inForeignTerritory = true;
+						}
+					}
+					previousChildPlace = childPlace;
+					const child = createPerson(childGender, childBirthDate, childPlace, familyName);
+					child.mother = mother;
+					child.father = father;
+					generateGivenNamesForPerson(child, grandparents, usedFirstNames);
+					const firstName = child.givenNames.split(" ")[0];
+					usedFirstNames.add(firstName);
+					birthDates.push(childBirthDate);
+					children.push(child);
+				}
+				children.sort((a, b) => compareDates(a.birthDate, b.birthDate));
+				mother.children = children;
+				father.children = children;
+				return children;
+			}
+
+			function generateGrandchildren(child, referenceDate) {
+				const grandchildren = [];
+				const m = getMultiplier();
+				const childAge = calculateAge(child.birthDate, referenceDate);
+				if (childAge < 18 * m) return grandchildren;
+				const pM = Math.min(0.95, 0.05 + (0.035 / m) * (childAge - 18 * m));
+				if (Math.random() >= pM) return grandchildren;
+
+				const spouseGender = child.gender === 1 ? 0 : 1;
+				const rand = Math.random();
+				let spouseAgeDiff;
+				if (rand < 0.44) {
+					spouseAgeDiff = -random(0, Math.round(5 * m));
+				} else if (rand < 0.88) {
+					spouseAgeDiff = random(0, Math.round(5 * m));
+				} else {
+					spouseAgeDiff = Math.random() < 0.5 ? -random(Math.round(6 * m), Math.round(15 * m)) : random(Math.round(6 * m), Math.round(15 * m));
+				}
+
+				let spouseAge = childAge + spouseAgeDiff;
+				if (spouseAge < 18 * m) spouseAge = Math.round(18 * m);
+				const refDate = parseDate(referenceDate);
+				const spouseBirthYear = refDate.year - spouseAge;
+				const spouseBirthDate = generateRandomDateInYear(spouseBirthYear);
+				const spouseBirthPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+
+				const spouseBirthFamilyName = weightedRandomChoice(data.family_names);
+
+				const spouse = createPerson(spouseGender, spouseBirthDate, spouseBirthPlace, spouseBirthFamilyName);
+				generateGivenNamesForPerson(spouse, []);
+
+				child.spouse = spouse;
+				spouse.spouse = child;
+
+				if (child.gender === 0) {
+					spouse.familyName = child.familyName;
+				} else {
+					child.familyName = spouse.familyName;
+				}
+
+				const gcMother = child.gender === 0 ? child : spouse;
+				const gcFather = child.gender === 1 ? child : spouse;
+				const motherAge = calculateAge(gcMother.birthDate, referenceDate);
+				const fatherAge = calculateAge(gcFather.birthDate, referenceDate);
+				const marriageAge = random(Math.round(18 * m), Math.round(Math.min(motherAge, 40 * m)));
+				const yearsMarried = motherAge - marriageAge;
+
+				if (yearsMarried < 1) return grandchildren;
+				const pC = Math.min(0.9, 0.1 + (0.03 / m) * yearsMarried);
+				if (Math.random() >= pC) return grandchildren;
+
+				let numGC = 1;
+				for (let i = 0; i < 5; i++) {
+					if (Math.random() < 0.7) numGC++;
+					else break;
+				}
+
+				const motherBirth = parseDate(gcMother.birthDate);
+				const fatherBirth = parseDate(gcFather.birthDate);
+				const menopauseAge = getMenopauseAge();
+				const scaledMinMotherAge = Math.round(MIN_MOTHER_AGE * m);
+				const motherMinChildYear = motherBirth.year + scaledMinMotherAge;
+				if (gcMother.died && gcMother.deathDate) {
+					const motherDeath = parseDate(gcMother.deathDate);
+					motherMaxChildYear = Math.min(motherMaxChildYear, motherDeath.year);
+				}
+
+				const fatherMinChildYear = fatherBirth.year + Math.round(16 * m);
+				const marriageYear = refDate.year - yearsMarried;
+				const minChildYear = Math.max(motherMinChildYear, marriageYear, fatherMinChildYear);
+
+				if (motherMaxChildYear < minChildYear) return grandchildren;
+
+				let birthDates = [];
+				let usedFirstNames = new Set();
+
+				const familyName = gcMother.familyName;
+				let previousPlace = null;
+				const isForeignPlace = (place) => data.international_places && data.international_places.includes(place);
+				let inForeignTerritory = false;
+
+				for (let i = 0; i < numGC; i++) {
+					let attempts = 0;
+					let success = false;
+					let gcBirthDate;
+
+					while (!success && attempts < 100) {
+						attempts++;
+						const birthYear = random(minChildYear, motherMaxChildYear);
+						gcBirthDate = generateRandomDateInYear(birthYear, birthYear === refDate.year ? referenceDate : null);
+
+						if (isDateAfter(gcBirthDate, referenceDate)) continue;
+						if (gcMother.died && gcMother.deathDate && isDateAfter(gcBirthDate, gcMother.deathDate)) continue;
+
+						let validDate = true;
+						for (const existing of birthDates) {
+							if (!isAtLeast10MonthsApart(existing, gcBirthDate)) {
+								validDate = false;
+								break;
+							}
+						}
+						if (validDate) success = true;
+					}
+
+					if (!success) continue;
+
+					const gcGender = Math.random() < 0.5 ? 1 : 0;
+					let gcPlace;
+
+					if (previousPlace && Math.random() < 0.9) {
+						gcPlace = previousPlace;
+					} else {
+						if (inForeignTerritory) {
+							if (Math.random() < 0.9) {
+								gcPlace = data.international_places[Math.floor(Math.random() * data.international_places.length)];
+							} else {
+								gcPlace = weightedPlaceOfBirth(data.places_of_birth, []);
+								inForeignTerritory = false;
+							}
+						} else {
+							gcPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+							if (isForeignPlace(gcPlace)) inForeignTerritory = true;
+						}
+					}
+					previousPlace = gcPlace;
+
+					const gc = createPerson(gcGender, gcBirthDate, gcPlace, familyName);
+					gc.mother = gcMother;
+					gc.father = gcFather;
+					generateGivenNamesForPerson(gc, [], usedFirstNames);
+					const firstName = gc.givenNames.split(" ")[0];
+					usedFirstNames.add(firstName);
+					birthDates.push(gcBirthDate);
+					grandchildren.push(gc);
+				}
+
+				grandchildren.sort((a, b) => compareDates(a.birthDate, b.birthDate));
+				gcMother.children = grandchildren;
+				gcFather.children = grandchildren;
+				return grandchildren;
+			}
+
+			function generateSpouseTree(spouse, referenceDate) {
+				if (!spouse) return null;
+
+				const upGenInput = document.getElementById("upGenInput");
+				const upGenLimit = upGenInput ? parseInt(upGenInput.value) || 2 : 2;
+
+				generateAncestors(spouse, 1, upGenLimit, referenceDate);
+
+				const mother = spouse.mother;
+				const father = spouse.father;
+				const maternalGrandmother = mother ? mother.mother : null;
+				const maternalGrandfather = mother ? mother.father : null;
+				const paternalGrandmother = father ? father.mother : null;
+				const paternalGrandfather = father ? father.father : null;
+				const allGrandparents = [maternalGrandmother, maternalGrandfather, paternalGrandmother, paternalGrandfather];
+
+				const spouseSiblings = generateSiblings(spouse, mother, father, referenceDate, allGrandparents, true);
+				spouse.siblings = spouseSiblings;
+
+				applyDeathLogic(spouse, referenceDate);
+
+				spouseSiblings.forEach((sib) => applyDeathLogic(sib, referenceDate));
+
+				const processCollaterals = (siblings) => {
+					const processDeepCollateral = (p) => {
+						generateInlineParentNames(p, []);
+						generateSpouseForSibling(p, referenceDate);
+						applyDeathLogic(p, referenceDate);
+						if (p.children && p.children.length > 0) {
+							for (const child of p.children) {
+								processDeepCollateral(child);
+							}
+						}
+					};
+					for (const sib of siblings) processDeepCollateral(sib);
+				};
+
+				processCollaterals(spouseSiblings);
+
+				return {
+					spouse: spouse,
+					spouseSiblings: spouseSiblings,
+				};
+			}
+			function generateSiblings(anchorPerson, mother, father, referenceDate, grandparents = [], allowExSpouse = true) {
+				const m = getMultiplier();
+				const siblings = [];
+				let totalChildren = 1;
+				for (let i = 0; i < MAX_SIBLINGS; i++) {
+					if (Math.random() < SIBLING_CONTINUATION_CHANCE) totalChildren++;
+					else break;
+				}
+				if (totalChildren <= 1) return siblings;
+
+				const anchorBirth = parseDate(anchorPerson.birthDate);
+				let minBirthYear, maxBirthYear, familyName;
+
+				if (mother && father) {
+					const motherBirth = parseDate(mother.birthDate);
+					const fatherBirth = parseDate(father.birthDate);
+					const menopauseAge = getMenopauseAge();
+
+					const scaledMinMotherAge = Math.round(MIN_MOTHER_AGE * m);
+					const motherMinChildbearingYear = motherBirth.year + scaledMinMotherAge;
+
+					let motherMaxChildbearingYear = motherBirth.year + menopauseAge;
+					if (mother.died && mother.deathDate) {
+						const motherDeath = parseDate(mother.deathDate);
+						motherMaxChildbearingYear = Math.min(motherMaxChildbearingYear, motherDeath.year);
+					}
+					const fatherMinChildYear = fatherBirth.year + Math.round(16 * m);
+					const refDate = parseDate(referenceDate);
+					maxBirthYear = Math.min(motherMaxChildbearingYear, refDate.year);
+					minBirthYear = Math.max(motherMinChildbearingYear, fatherMinChildYear);
+					familyName = mother.familyName;
+				} else {
+					const estimatedMotherBirthYear = anchorBirth.year - getMotherAgeAtBirth();
+					const menopauseAge = getMenopauseAge();
+					const scaledMinMotherAge = Math.round(MIN_MOTHER_AGE * m);
+					minBirthYear = estimatedMotherBirthYear + scaledMinMotherAge;
+					maxBirthYear = Math.min(estimatedMotherBirthYear + menopauseAge, parseDate(referenceDate).year);
+					familyName = anchorPerson.birthFamilyName || anchorPerson.familyName;
+				}
+
+				if (maxBirthYear < minBirthYear) return siblings;
+
+				let birthDates = [anchorPerson.birthDate];
+				const siblingsNeeded = totalChildren - 1;
+				let attempts = 0;
+				let previousBirthPlace = anchorPerson.birthPlace;
+				const isForeignPlace = (place) => data.international_places && data.international_places.includes(place);
+				let inForeignTerritory = isForeignPlace(anchorPerson.birthPlace);
+
+				while (siblings.length < siblingsNeeded && attempts < 200) {
+					attempts++;
+					const birthYear = random(minBirthYear, maxBirthYear);
+					let birthDate = generateRandomDateInYear(birthYear, birthYear === parseDate(referenceDate).year ? referenceDate : null);
+					if (isDateAfter(birthDate, referenceDate)) continue;
+					if (mother && mother.died && mother.deathDate && isDateAfter(birthDate, mother.deathDate)) continue;
+					if (father && father.died && father.deathDate) {
+						const childBirth = parseDate(birthDate);
+						const fatherDeath = parseDate(father.deathDate);
+
+						const monthsDiff = (childBirth.year - fatherDeath.year) * 12 + (childBirth.month - fatherDeath.month);
+
+						if (monthsDiff > 9 * m) continue;
+					}
+					let validDate = true;
+					for (const existing of birthDates) {
+						if (!isAtLeast10MonthsApart(existing, birthDate)) {
+							validDate = false;
+							break;
+						}
+					}
+					if (!validDate) continue;
+
+					const birthRoll = Math.random();
+					let birthType = "single";
+					if (birthRoll < TRIPLET_CHANCE) {
+						birthType = "triplet";
+					} else if (birthRoll < TRIPLET_CHANCE + TWIN_CHANCE) {
+						birthType = "twin";
+					}
+
+					let birthPlace;
+					if (Math.random() < 0.85) {
+						birthPlace = previousBirthPlace;
+					} else {
+						if (inForeignTerritory) {
+							if (Math.random() < 0.9) birthPlace = data.international_places[Math.floor(Math.random() * data.international_places.length)];
+							else {
+								birthPlace = weightedPlaceOfBirth(data.places_of_birth, []);
+								inForeignTerritory = false;
+							}
+						} else {
+							if (mother && father && Math.random() < 0.3) birthPlace = Math.random() < 0.5 ? mother.birthPlace : father.birthPlace;
+							else {
+								birthPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+								if (isForeignPlace(birthPlace)) inForeignTerritory = true;
+							}
+						}
+						previousBirthPlace = birthPlace;
+					}
+
+					const createSiblingPerson = (sibBirthDate) => {
+						const sibGender = Math.random() < 0.5 ? 1 : 0;
+						const sib = createPerson(sibGender, sibBirthDate, birthPlace, familyName);
+						sib.mother = mother;
+						sib.father = father;
+						if (!mother && !father && anchorPerson.motherName && anchorPerson.fatherName) {
+							sib.motherName = anchorPerson.motherName;
+							sib.fatherName = anchorPerson.fatherName;
+						}
+						return sib;
+					};
+
+					// --- FIXED DEATH LOGIC BLOCK ---
+					if (birthType === "single") {
+						const sib = createSiblingPerson(birthDate);
+						applyDeathLogic(sib, referenceDate); // Kill immediately
+						siblings.push(sib);
+						birthDates.push(birthDate);
+					} else if (birthType === "twin") {
+						const sib1 = createSiblingPerson(birthDate);
+						let sib2Date = birthDate;
+						if (Math.random() < TWIN_DAY_DIFFERENCE_CHANCE) {
+							/* ... date logic ... */
+						}
+						const sib2 = createSiblingPerson(sib2Date);
+
+						if (siblings.length + 2 <= siblingsNeeded) {
+							applyDeathLogic(sib1, referenceDate); // Kill sib1
+							applyDeathLogic(sib2, referenceDate); // Kill sib2
+							siblings.push(sib1);
+							siblings.push(sib2);
+							birthDates.push(birthDate);
+							if (sib2Date !== birthDate) birthDates.push(sib2Date);
+						} else if (siblings.length + 1 <= siblingsNeeded) {
+							applyDeathLogic(sib1, referenceDate); // Kill sib1
+							siblings.push(sib1);
+							birthDates.push(birthDate);
+						}
+					} else if (birthType === "triplet") {
+						const sib1 = createSiblingPerson(birthDate);
+						const sib2 = createSiblingPerson(birthDate);
+						const sib3 = createSiblingPerson(birthDate);
+						const toAdd = Math.min(3, siblingsNeeded - siblings.length);
+						const triplets = [sib1, sib2, sib3].slice(0, toAdd);
+
+						for (const t of triplets) {
+							applyDeathLogic(t, referenceDate); // Kill the specific triplet
+							siblings.push(t);
+						}
+						birthDates.push(birthDate);
+					}
+					// --- END FIXED BLOCK ---
+				}
+
+				const allChildren = [anchorPerson, ...siblings];
+				allChildren.sort((a, b) => compareDates(a.birthDate, b.birthDate));
+				const usedFirstNames = new Set();
+				const anchorFirstName = anchorPerson.givenNames ? anchorPerson.givenNames.split(" ")[0] : null;
+				if (anchorFirstName) usedFirstNames.add(anchorFirstName);
+				for (const sib of siblings) {
+					generateGivenNamesForPerson(sib, grandparents, usedFirstNames);
+					const firstName = sib.givenNames.split(" ")[0];
+					usedFirstNames.add(firstName);
+				}
+
+				if (mother && father) {
+					mother.children = allChildren;
+					father.children = allChildren;
+				}
+
+				if (allowExSpouse && mother && father && allChildren.length >= 2 && Math.random() < EX_SPOUSE_CHANCE * 0.7) {
+					const exResult = generateExSpouseIfNeeded(mother, referenceDate, allChildren, false);
+					if (exResult) {
+						mother.exSpouses.push({
+							exSpouse: exResult.exSpouse,
+							marriedDate: null,
+							endDate: null,
+						});
+						father.children = exResult.currentChildren;
+					}
+				}
+
+				return siblings;
+			}
+
+			function generateGivenNamesForPerson(person, grandparents = [], forbiddenFirstNames = new Set()) {
+				const nameList = getNamesByGender(data.first_names, person.gender);
+				const isJP = document.getElementById("dataSelector").value === "jp.js"; // CHECK DATASET
+				let names = [];
+				let usedNames = new Set();
+				const r = Math.random();
+				let totalNames = 1;
+				if (!isJP) {
+					if (r > 0.55) totalNames = 2;
+					if (r > 0.92) totalNames = 3;
+				}
+				if (isJP) {
+					if (person.motherName) forbiddenFirstNames.add(person.motherName.split(" ")[0]);
+					if (person.fatherName) forbiddenFirstNames.add(person.fatherName.split(" ")[0]);
+				}
+
+				let firstName = null;
+				let attempts = 0;
+				while (!firstName && attempts < 50) {
+					attempts++;
+					const candidate = weightedRandomChoice(nameList);
+					if (!forbiddenFirstNames.has(candidate)) {
+						firstName = candidate;
+					}
+				}
+				if (!firstName) firstName = weightedRandomChoice(nameList);
+				names.push(firstName);
+				usedNames.add(firstName);
+				for (let i = 1; i < totalNames; i++) {
+					let middleName = null;
+					const useGrandparentName = Math.random() < 0.66;
+					if (useGrandparentName && grandparents.length > 0) {
+						const sameGenderGrandparents = grandparents.filter((gp) => gp && gp.gender === person.gender && gp.givenNames);
+						if (sameGenderGrandparents.length > 0) {
+							const gp = sameGenderGrandparents[Math.floor(Math.random() * sameGenderGrandparents.length)];
+							const gpNames = gp.givenNames.split(" ");
+							const validNames = gpNames.filter((n) => !usedNames.has(n));
+							if (validNames.length > 0) {
+								middleName = validNames[Math.floor(Math.random() * validNames.length)];
+							}
+						}
+					}
+					if (!middleName) {
+						let midAttempts = 0;
+						while (!middleName && midAttempts < 20) {
+							midAttempts++;
+							const candidate = weightedRandomChoice(nameList);
+							if (!usedNames.has(candidate)) {
+								middleName = candidate;
+							}
+						}
+					}
+					if (middleName) {
+						names.push(middleName);
+						usedNames.add(middleName);
+					}
+				}
+				person.givenNames = names.join(" ");
+			}
+			function generateAncestors(person, currentDepth, maxDepth, referenceDate) {
+				if (currentDepth > maxDepth) {
+					generateInlineParentNames(person, []);
+					return;
+				}
+
+				const m = getMultiplier();
+				const personBirth = parseDate(person.birthDate);
+				const motherAge = getMotherAgeAtBirth();
+				const motherBirthYear = personBirth.year - motherAge;
+				const mother = createPerson(0, generateRandomDateInYear(motherBirthYear), weightedPlaceOfBirth(data.places_of_birth, data.international_places), person.birthFamilyName || person.familyName);
+				mother.isAncestor = true;
+
+				let fatherAgeDiff = random(Math.round(-5 * m), Math.round(10 * m));
+				let fatherBirthYear = motherBirthYear + fatherAgeDiff;
+				const maxFatherBirthYear = personBirth.year - Math.round(16 * m);
+				if (fatherBirthYear > maxFatherBirthYear) fatherBirthYear = maxFatherBirthYear;
+
+				const father = createPerson(1, generateRandomDateInYear(fatherBirthYear), weightedPlaceOfBirth(data.places_of_birth, data.international_places), person.birthFamilyName || person.familyName);
+				father.birthFamilyName = weightedRandomChoice(data.family_names);
+				father.isAncestor = true;
+				person.mother = mother;
+				person.father = father;
+				mother.spouse = father;
+				father.spouse = mother;
+				mother.children = [person];
+				father.children = [person];
+
+				generateGivenNamesForPerson(mother, []);
+				generateGivenNamesForPerson(father, []);
+
+				generateAncestors(mother, currentDepth + 1, maxDepth, referenceDate);
+				generateAncestors(father, currentDepth + 1, maxDepth, referenceDate);
+
+				const motherSiblings = generateSiblings(mother, mother.mother, mother.father, referenceDate, [], true);
+				const fatherSiblings = generateSiblings(father, father.mother, father.father, referenceDate, [], true);
+
+				mother.siblings = motherSiblings;
+				father.siblings = fatherSiblings;
+
+				const processCollaterals = (siblings) => {
+					for (const sib of siblings) {
+						generateInlineParentNames(sib, []);
+						generateSpouseForSibling(sib, referenceDate);
+						applyDeathLogic(sib, referenceDate);
+						if (sib.children && sib.children.length > 0) {
+							const processDeepCousins = (subSib) => {
+								generateInlineParentNames(subSib, []);
+								generateSpouseForSibling(subSib, referenceDate);
+								applyDeathLogic(subSib, referenceDate);
+								if (subSib.children) subSib.children.forEach(processDeepCousins);
+							};
+							sib.children.forEach(processDeepCousins);
+						}
+					}
+				};
+				processCollaterals(motherSiblings);
+				processCollaterals(fatherSiblings);
+				applyDeathLogic(mother, referenceDate);
+				applyDeathLogic(father, referenceDate);
+			}
+			function generateFamilyTree(referenceDate, selfGender) {
+				const m = getMultiplier();
+				const refDate = parseDate(referenceDate);
+
+				const upGenInput = document.getElementById("upGenInput");
+				const upGenLimit = upGenInput ? parseInt(upGenInput.value) || 2 : 2;
+				const minAgeInput = document.getElementById("minAgeInput");
+				const maxAgeInput = document.getElementById("maxAgeInput");
+				let minVal = 12;
+				let maxVal = 67;
+
+				if (minAgeInput && maxAgeInput) {
+					minVal = parseInt(minAgeInput.value) || 12;
+					maxVal = parseInt(maxAgeInput.value) || 67;
+				}
+
+				const selfAge = random(Math.round(minVal * m), Math.round(maxVal * m));
+				const selfBirthYear = refDate.year - selfAge;
+				const selfBirthDate = generateRandomDateInYear(selfBirthYear, referenceDate);
+				const selfBirthPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+				const selfFamilyName = weightedRandomChoice(data.family_names);
+				const self = createPerson(selfGender, selfBirthDate, selfBirthPlace, selfFamilyName);
+				self.isAncestor = true;
+				generateAncestors(self, 1, upGenLimit, referenceDate);
+
+				const mother = self.mother;
+				const father = self.father;
+
+				const maternalGrandmother = mother ? mother.mother : null;
+				const maternalGrandfather = mother ? mother.father : null;
+				const paternalGrandmother = father ? father.mother : null;
+				const paternalGrandfather = father ? father.father : null;
+
+				const allGrandparents = [maternalGrandmother, maternalGrandfather, paternalGrandmother, paternalGrandfather];
+
+				generateGivenNamesForPerson(self, allGrandparents);
+
+				const processCollaterals = (siblings) => {
+					const processDeepCollateral = (p) => {
+						generateInlineParentNames(p, []);
+						generateSpouseForSibling(p, referenceDate);
+						applyDeathLogic(p, referenceDate);
+						if (p.children && p.children.length > 0) {
+							for (const child of p.children) {
+								processDeepCollateral(child);
+							}
+						}
+					};
+					for (const sib of siblings) processDeepCollateral(sib);
+				};
+
+				const selfSiblings = generateSiblings(self, mother, father, referenceDate, allGrandparents, true);
+
+				selfSiblings.forEach((sib) => applyDeathLogic(sib, referenceDate));
+
+				processCollaterals(selfSiblings);
+
+				const spouse = generateSpouseForSelf(self, referenceDate, allGrandparents);
+				let children = [];
+
+				if (spouse) applyDeathLogic(spouse, referenceDate);
+
+				if (spouse) {
+					const selfMother = self.gender === 0 ? self : spouse;
+					const selfFather = self.gender === 1 ? self : spouse;
+					children = generateChildrenForCouple(selfMother, selfFather, referenceDate, allGrandparents);
+
+					processCollaterals(children);
+				}
+
+				let spouseTree = null;
+				let exSpouseTrees = [];
+				if (spouse && children.length > 0) {
+					const exResult = generateExSpouseIfNeeded(self, referenceDate, children, true);
+
+					if (exResult) {
+						self.exSpouses.push({ exSpouse: exResult.exSpouse, marriedDate: null, endDate: null });
+						exSpouseTrees.push(exResult);
+						if (spouse) spouse.children = exResult.currentChildren;
+						children = exResult.currentChildren;
+					}
+				}
+				if (spouse) spouseTree = generateSpouseTree(spouse, referenceDate);
+
+				return {
+					self: self,
+					selfSiblings: selfSiblings,
+					spouse: spouse,
+					spouseTree: spouseTree,
+					exSpouseTrees: exSpouseTrees,
+					children: children,
+					grandchildren: [],
+					mother: mother,
+					father: father,
+					motherSiblings: [],
+					fatherSiblings: [],
+					maternalGrandmother: maternalGrandmother,
+					maternalGrandmotherSiblings: [],
+					maternalGrandfather: maternalGrandfather,
+					maternalGrandfatherSiblings: [],
+					paternalGrandmother: paternalGrandmother,
+					paternalGrandmotherSiblings: [],
+					paternalGrandfather: paternalGrandfather,
+					paternalGrandfatherSiblings: [],
+				};
+			}
+			function adjustDateByMonths(dateStr, months) {
+				const d = parseDate(dateStr);
+				let year = d.year;
+				let month = d.month + Math.round(months);
+				while (month > 12) {
+					month -= 12;
+					year += 1;
+				}
+				while (month < 1) {
+					month += 12;
+					year -= 1;
+				}
+				return formatDate(year, month, d.day);
+			}
+
+			function formatPersonInline(person, showParents = true, useChildFormat = false, showSpouse = true, showChildren = true, showExSpouse = true) {
+				if (!person || typeof person !== "object") return "[Data Error]";
+
+				const referenceDateStr = document.getElementById("birthDate").value;
+				let formattedRefDate;
+				if (/^\d{8}$/.test(referenceDateStr)) {
+					formattedRefDate = formatDate(parseInt(referenceDateStr.substring(0, 4)), parseInt(referenceDateStr.substring(4, 6)), parseInt(referenceDateStr.substring(6, 8)));
+				} else {
+					formattedRefDate = "1935/01/01";
+				}
+				const displayBirthDate = getMaskedDate(person);
+				const formattedBirthPlace = applyHistoricalPlaceName(person.birthPlace, person.birthDate);
+				let result = `${person.familyName} , ${person.givenNames} born ${formattedBirthPlace} ${displayBirthDate}`;
+
+				let personEffectiveDeath = null;
+				if (person.died && (isDateBefore(person.deathDate, formattedRefDate) || person.deathDate === formattedRefDate)) {
+					personEffectiveDeath = person.deathDate;
+					const formattedDeathPlace = applyHistoricalPlaceName(person.deathPlace, person.deathDate);
+					if (person.inMilitary) {
+						result += ` died IN MILITARY-SERVICE IN ${formattedDeathPlace} ${person.deathDate}`;
+					} else {
+						result += ` died ${formattedDeathPlace} ${person.deathDate}`;
+					}
+				}
+
+				if (showParents) {
+					if (person.mother && person.father) {
+						const motherName = person.motherIsBureau ? getBureauName(person.birthDate) : person.mother.givenNames;
+						const fatherName = person.fatherIsBureau ? getBureauName(person.birthDate) : person.father.givenNames;
+						if (useChildFormat) {
+							result += ` born of : ${motherName} & ${fatherName}`;
+						} else {
+							result += ` , parents : ${motherName} & ${fatherName}`;
+						}
+					} else if (person.motherName && person.fatherName) {
+						if (useChildFormat) {
+							result += ` born of : ${person.motherName} & ${person.fatherName}`;
+						} else {
+							result += ` , parents : ${person.motherName} & ${person.fatherName}`;
+						}
+					}
+				}
+
+				if (showExSpouse && person.exSpouses && person.exSpouses.length > 0) {
+					for (const exInfo of person.exSpouses) {
+						const ex = exInfo.exSpouse;
+						const formattedExSpouseBirthPlace = applyHistoricalPlaceName(ex.birthPlace, ex.birthDate);
+						const exDispDate = getMaskedDate(ex);
+
+						result += ` , ex-spouse : ${ex.givenNames} ${exDispDate} ${formattedExSpouseBirthPlace}`;
+					}
+				}
+
+				if (person.spouse && showSpouse) {
+					const formattedSpouseBirthPlace = applyHistoricalPlaceName(person.spouse.birthPlace, person.spouse.birthDate);
+					const spDispDate = getMaskedDate(person.spouse);
+
+					result += ` , spouse : ${person.spouse.givenNames} ${spDispDate} ${formattedSpouseBirthPlace}`;
+				}
+
+				if (showChildren && Array.isArray(person.children) && person.children.length > 0) {
+					const childrenStr = person.children
+						.map((c) => {
+							const formattedChildBirthPlace = applyHistoricalPlaceName(c.birthPlace, c.birthDate);
+							const cDispDate = getMaskedDate(c);
+
+							let childStr = `${c.givenNames} ${formattedChildBirthPlace} ${cDispDate}`;
+
+							let childEffectiveDeath = null;
+							if (c.died && (isDateBefore(c.deathDate, formattedRefDate) || c.deathDate === formattedRefDate)) {
+								childEffectiveDeath = c.deathDate;
+								const formattedChildDeathPlace = applyHistoricalPlaceName(c.deathPlace, c.deathDate);
+								if (c.inMilitary) {
+									childStr += ` died IN MILITARY-SERVICE IN ${formattedChildDeathPlace} ${c.deathDate}`;
+								} else {
+									childStr += ` died ${formattedChildDeathPlace} ${c.deathDate}`;
+								}
+							}
+							let motherName, fatherName;
+							if (c.mother) {
+								motherName = c.motherIsBureau ? getBureauName(c.birthDate) : c.mother.givenNames;
+							} else if (c.motherName) {
+								motherName = c.motherName;
+							}
+							if (c.father) {
+								fatherName = c.fatherIsBureau ? getBureauName(c.birthDate) : c.father.givenNames;
+							} else if (c.fatherName) {
+								fatherName = c.fatherName;
+							}
+							if (motherName && fatherName) {
+								childStr += ` born of : ${motherName} & ${fatherName}`;
+							}
+							return childStr;
+						})
+						.join(" , ");
+					result += ` , children : ${childrenStr}`;
+				}
+
+				return result;
+			}
+			function renderFamilyTreeTable(tree, referenceDate) {
+				let rows = [];
+
+				function recursiveRenderSelfDescendant(person, generation) {
+					let label = "CHILD";
+					if (generation === 1) label = "GRAND‑CHILD";
+					else if (generation === 2) label = "GREAT-GRAND‑CHILD";
+					else if (generation > 2) label = `${generation - 1}TH GREAT-GRAND‑CHILD`;
+
+					rows.push({ type: "direct", closeness: label, person: person, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+					if (person.children && person.children.length > 0) {
+						for (const child of person.children) recursiveRenderSelfDescendant(child, generation + 1);
+					}
+				}
+
+				function recursiveRenderSiblingDescendant(person, generation) {
+					let label = "CHILD OF SIBLING";
+					if (generation === 1) label = "GRAND‑CHILD OF SIBLING";
+					else if (generation === 2) label = "GREAT‑GRAND‑CHILD OF SIBLING";
+
+					rows.push({ type: "collateral", closeness: label, person: person, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+					if (person.children && person.children.length > 0) {
+						for (const child of person.children) recursiveRenderSiblingDescendant(child, generation + 1);
+					}
+				}
+
+				function recursiveRenderAncestors(person, generation, currentLabel) {
+					if (!person) return;
+
+					rows.push({ type: "direct", closeness: currentLabel, person: person, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+					let siblingsToRender = [];
+					if (person.mother && person.mother.children) {
+						siblingsToRender = person.mother.children.filter((c) => c !== person);
+					} else if (person.siblings) {
+						siblingsToRender = person.siblings;
+					}
+
+					if (siblingsToRender.length > 0) {
+						siblingsToRender.forEach((sib) => {
+							let sibLabel = `SIBLING OF ${currentLabel}`;
+
+							rows.push({ type: "collateral", closeness: sibLabel, person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+							if (sib.children) {
+								sib.children.forEach((child) => recursiveRenderCousin(child, generation, 1));
+							}
+						});
+					}
+
+					if (person.mother) recursiveRenderAncestors(person.mother, generation + 1, "MOTHER OF " + currentLabel);
+					if (person.father) recursiveRenderAncestors(person.father, generation + 1, "FATHER OF " + currentLabel);
+				}
+
+				function recursiveRenderCousin(person, ancestorGeneration, descendantDepth) {
+					const degree = Math.min(ancestorGeneration, descendantDepth);
+
+					const removed = Math.abs(ancestorGeneration - descendantDepth);
+
+					let label;
+
+					if (degree === 1) {
+						label = "1ST COUSIN";
+					} else if (degree === 2) {
+						label = "2ND COUSIN";
+					} else if (degree === 3) {
+						label = "3RD COUSIN";
+					} else {
+						label = `${degree}TH COUSIN`;
+					}
+
+					if (removed === 1) {
+						label += " ONCE RE-MOVT";
+					} else if (removed === 2) {
+						label += " TWICE RE-MOVT";
+					} else if (removed === 3) {
+						label += " THRICE RE-MOVT";
+					} else if (removed > 3) {
+						label += ` ${removed} TIMES RE-MOVT`;
+					}
+
+					rows.push({ type: "collateral", closeness: label, person: person, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+					if (person.children) {
+						person.children.forEach((child) => recursiveRenderCousin(child, ancestorGeneration, descendantDepth + 1));
+					}
+				}
+
+				rows.push({ type: "direct", closeness: "SELF", person: tree.self, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+				if (tree.self.children) {
+					tree.self.children.forEach((child) => recursiveRenderSelfDescendant(child, 0));
+				}
+
+				if (tree.selfSiblings) {
+					tree.selfSiblings.forEach((sib) => {
+						rows.push({ type: "collateral", closeness: "SIBLING", person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+						if (sib.children) sib.children.forEach((child) => recursiveRenderSiblingDescendant(child, 0));
+					});
+				}
+
+				if (tree.self.mother) recursiveRenderAncestors(tree.self.mother, 1, "MOTHER");
+				if (tree.self.father) recursiveRenderAncestors(tree.self.father, 1, "FATHER");
+
+				let html = '<div class="tree-separator">SELF TABLE</div>';
+				html += '<table class="family-tree-table">';
+				html += "<tr><th>CLOSENESS</th><th colspan=2>DETAIL</th></tr>";
+
+				for (const row of rows) {
+					const detail = formatPersonInline(row.person, true, row.childFormat, row.showSpouse, row.showChildren, row.showExSpouse);
+					const rowClass = row.type === "collateral" ? "row-collateral" : "row-direct";
+					const effectiveDeath = row.person.died && isDateBefore(row.person.deathDate, referenceDate) ? row.person.deathDate : null;
+					const ageBox = getDualAgeBox(row.person.birthDate, referenceDate, effectiveDeath);
+					html += `<tr class="${rowClass}"><td class="closeness-cell">${row.closeness}</td><td>${detail}</td><td>${ageBox}</td></tr>`;
+				}
+				html += "</table>";
+
+				if (tree.spouseTree) {
+					html += renderSpouseTable(tree.spouseTree, referenceDate);
+				}
+
+				if (tree.exSpouseTrees && tree.exSpouseTrees.length > 0) {
+					tree.exSpouseTrees.forEach((exItem, index) => {
+						html += renderExSpouseTable(exItem, index + 1, referenceDate, tree.self);
+					});
+				}
+				return html;
+			}
+			function renderSpouseTable(spouseTree, referenceDate) {
+				let rows = [];
+
+				function recursiveRenderSiblingDescendant(person, generation) {
+					let label = "CHILD OF SIBLING";
+					if (generation === 1) label = "GRAND‑CHILD OF SIBLING";
+					else if (generation === 2) label = "GREAT‑GRAND‑CHILD OF SIBLING";
+					else if (generation > 2) label = `${generation - 1}TH GREAT-GRAND‑CHILD OF SIBLING`;
+
+					rows.push({ type: "collateral", closeness: label, person: person, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+					if (person.children && person.children.length > 0) {
+						for (const child of person.children) recursiveRenderSiblingDescendant(child, generation + 1);
+					}
+				}
+
+				function recursiveRenderAncestors(person, generation, currentLabel) {
+					if (!person) return;
+
+					rows.push({ type: "direct", closeness: currentLabel, person: person, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+					let siblingsToRender = [];
+
+					if (person.mother && person.mother.children) {
+						siblingsToRender = person.mother.children.filter((c) => c !== person);
+					} else if (person.siblings) {
+						siblingsToRender = person.siblings;
+					}
+
+					if (siblingsToRender.length > 0) {
+						siblingsToRender.forEach((sib) => {
+							let sibLabel = `SIBLING OF ${currentLabel}`;
+
+							rows.push({ type: "collateral", closeness: sibLabel, person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+							if (sib.children) {
+								sib.children.forEach((child) => recursiveRenderCousin(child, generation, 1));
+							}
+						});
+					}
+
+					if (person.mother) recursiveRenderAncestors(person.mother, generation + 1, "MOTHER OF " + currentLabel);
+					if (person.father) recursiveRenderAncestors(person.father, generation + 1, "FATHER OF " + currentLabel);
+				}
+
+				function recursiveRenderCousin(person, ancestorGeneration, descendantDepth) {
+					const degree = Math.min(ancestorGeneration, descendantDepth);
+					const removed = Math.abs(ancestorGeneration - descendantDepth);
+					let label = `${degree}TH COUSIN`;
+					if (degree === 1) label = "1ST COUSIN";
+					if (removed === 1) label += " ONCE RE‑MOVED";
+					else if (removed === 2) label += " TWICE RE‑MOVED";
+					else if (removed > 2) label += ` ${removed} TIMES RE‑MOVED`;
+
+					rows.push({ type: "collateral", closeness: label, person: person, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+					if (person.children) {
+						person.children.forEach((child) => recursiveRenderCousin(child, ancestorGeneration, descendantDepth + 1));
+					}
+				}
+
+				rows.push({ type: "direct", closeness: "SELF", person: spouseTree.spouse, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+				if (spouseTree.spouseSiblings) {
+					spouseTree.spouseSiblings.forEach((sib) => {
+						rows.push({ type: "collateral", closeness: "SIBLING", person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+						if (sib.children) sib.children.forEach((child) => recursiveRenderSiblingDescendant(child, 0));
+					});
+				}
+
+				if (spouseTree.spouse.mother) recursiveRenderAncestors(spouseTree.spouse.mother, 1, "MOTHER");
+				if (spouseTree.spouse.father) recursiveRenderAncestors(spouseTree.spouse.father, 1, "FATHER");
+
+				let html = '<div class="tree-separator">SPOUSE TABLE</div>';
+				html += '<table class="family-tree-table">';
+				html += "<tr><th>CLOSENESS</th><th colspan=2>DETAIL</th></tr>";
+
+				for (const row of rows) {
+					const detail = formatPersonInline(row.person, true, row.childFormat, row.showSpouse, row.showChildren, row.showExSpouse);
+					const rowClass = row.type === "collateral" ? "row-collateral" : "row-direct";
+					const effectiveDeath = row.person.died && isDateBefore(row.person.deathDate, referenceDate) ? row.person.deathDate : null;
+					const ageBox = getDualAgeBox(row.person.birthDate, referenceDate, effectiveDeath);
+					html += `<tr class="${rowClass}"><td class="closeness-cell">${row.closeness}</td><td>${detail}</td><td>${ageBox}</td></tr>`;
+				}
+				html += "</table>";
+				return html;
+			}
+
+			function renderExSpouseTable(exSpouseTree, exNumber, referenceDate, originalPerson) {
+				let rows = [];
+
+				function recursiveRenderSiblingDescendant(person, generation) {
+					let label = "CHILD OF SIBLING";
+					if (generation === 1) label = "GRAND‑CHILD OF SIBLING";
+					else if (generation === 2) label = "GREAT‑GRAND‑CHILD OF SIBLING";
+
+					rows.push({ type: "collateral", closeness: label, person: person, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+					if (person.children && person.children.length > 0) {
+						for (const child of person.children) recursiveRenderSiblingDescendant(child, generation + 1);
+					}
+				}
+
+				function recursiveRenderAncestors(person, generation, currentLabel) {
+					if (!person) return;
+
+					rows.push({ type: "direct", closeness: currentLabel, person: person, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+					let siblingsToRender = [];
+					if (person.mother && person.mother.children) {
+						siblingsToRender = person.mother.children.filter((c) => c !== person);
+					} else if (person.siblings) {
+						siblingsToRender = person.siblings;
+					}
+
+					if (siblingsToRender.length > 0) {
+						siblingsToRender.forEach((sib) => {
+							let sibLabel = `SIBLING OF ${currentLabel}`;
+							rows.push({ type: "collateral", closeness: sibLabel, person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+							if (sib.children) {
+								sib.children.forEach((child) => recursiveRenderCousin(child, generation, 1));
+							}
+						});
+					}
+
+					if (person.mother) recursiveRenderAncestors(person.mother, generation + 1, "MOTHER OF " + currentLabel);
+					if (person.father) recursiveRenderAncestors(person.father, generation + 1, "FATHER OF " + currentLabel);
+				}
+
+				function recursiveRenderCousin(person, ancestorGeneration, descendantDepth) {
+					const degree = Math.min(ancestorGeneration, descendantDepth);
+					const removed = Math.abs(ancestorGeneration - descendantDepth);
+					let label = `${degree}TH COUSIN`;
+					if (degree === 1) label = "1ST COUSIN";
+					if (removed > 0) label += ` ${removed} REMOVED`;
+
+					rows.push({ type: "collateral", closeness: label, person: person, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+					if (person.children) {
+						person.children.forEach((child) => recursiveRenderCousin(child, ancestorGeneration, descendantDepth + 1));
+					}
+				}
+
+				const exSpouseForDisplay = { ...exSpouseTree.exSpouse };
+				exSpouseForDisplay.exSpouses = [
+					{
+						exSpouse: originalPerson,
+						marriedDate: null,
+						endDate: null,
+					},
+				];
+				rows.push({ type: "direct", closeness: "SELF", person: exSpouseForDisplay, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+				if (exSpouseTree.exChildren && exSpouseTree.exChildren.length > 0) {
+					for (const child of exSpouseTree.exChildren) {
+						rows.push({ type: "direct", closeness: "CHILD", person: child, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+					}
+				}
+
+				if (exSpouseTree.exSpouseTree && exSpouseTree.exSpouseTree.spouseSiblings) {
+					exSpouseTree.exSpouseTree.spouseSiblings.forEach((sib) => {
+						rows.push({ type: "collateral", closeness: "SIBLING", person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+						if (sib.children) sib.children.forEach((child) => recursiveRenderSiblingDescendant(child, 0));
+					});
+				}
+
+				const ex = exSpouseTree.exSpouse;
+				if (ex.mother) recursiveRenderAncestors(ex.mother, 1, "MOTHER");
+				if (ex.father) recursiveRenderAncestors(ex.father, 1, "FATHER");
+
+				let html = `<div class="tree-separator">EX ${exNumber} SPOUSE TABLE</div>`;
+				html += '<table class="family-tree-table">';
+				html += "<tr><th>CLOSENESS</th><th colspan=2>DETAIL</th></tr>";
+
+				for (const row of rows) {
+					const detail = formatPersonInline(row.person, true, row.childFormat, row.showSpouse, row.showChildren, row.showExSpouse);
+					const rowClass = row.type === "collateral" ? "row-collateral" : "row-direct";
+					const effectiveDeath = row.person.died && isDateBefore(row.person.deathDate, referenceDate) ? row.person.deathDate : null;
+					const ageBox = getDualAgeBox(row.person.birthDate, referenceDate, effectiveDeath);
+					html += `<tr class="${rowClass}"><td class="closeness-cell">${row.closeness}</td><td>${detail}</td><td>${ageBox}</td></tr>`;
+				}
+				html += "</table>";
+				return html;
+			}
+
+			function renderSpouseTableAsEntries(spouseTree, referenceDate, startNum) {
+				let rows = [];
+				rows.push({ closeness: "SELF", person: spouseTree.spouse, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+				for (const sib of spouseTree.spouseSiblings) {
+					rows.push({ closeness: "SIBLING", person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+					if (sib.children && sib.children.length > 0) {
+						for (const nephew of sib.children) {
+							rows.push({ closeness: "CHILD OF SIBLING", person: nephew, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+						}
+					}
+				}
+
+				rows.push({ closeness: "MOTHER", person: spouseTree.spouseMother, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+				for (const sib of spouseTree.spouseMotherSiblings) {
+					rows.push({ closeness: "SIBLING OF MOTHER", person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+					if (sib.children && sib.children.length > 0) {
+						for (const cousin of sib.children) {
+							rows.push({ closeness: "1ST COUSIN", person: cousin, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+						}
+					}
+				}
+
+				rows.push({ closeness: "MOTHER OF MOTHER", person: spouseTree.spouseMaternalGrandmother, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+				for (const sib of spouseTree.spouseMaternalGrandmotherSiblings) {
+					rows.push({ closeness: "SIBLING OF MOTHER OF MOTHER", person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+					if (sib.children && sib.children.length > 0) {
+						for (const child of sib.children) {
+							rows.push({ closeness: "1ST COUSIN ONCE RE‑MOVED", person: child, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+							if (child.children && child.children.length > 0) {
+								for (const secondCousin of child.children) {
+									rows.push({ closeness: "2ND COUSIN", person: secondCousin, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+									if (secondCousin.children && secondCousin.children.length > 0) {
+										for (const twiceRemoved of secondCousin.children) {
+											rows.push({ closeness: "2ND COUSIN ONCE RE‑MOVED", person: twiceRemoved, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				rows.push({ closeness: "FATHER OF MOTHER", person: spouseTree.spouseMaternalGrandfather, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+				for (const sib of spouseTree.spouseMaternalGrandfatherSiblings) {
+					rows.push({ closeness: "SIBLING OF FATHER OF MOTHER", person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+					if (sib.children && sib.children.length > 0) {
+						for (const child of sib.children) {
+							rows.push({ closeness: "1ST COUSIN ONCE RE‑MOVED", person: child, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+							if (child.children && child.children.length > 0) {
+								for (const secondCousin of child.children) {
+									rows.push({ closeness: "2ND COUSIN", person: secondCousin, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+									if (secondCousin.children && secondCousin.children.length > 0) {
+										for (const twiceRemoved of secondCousin.children) {
+											rows.push({ closeness: "2ND COUSIN ONCE RE‑MOVED", person: twiceRemoved, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				rows.push({ closeness: "FATHER", person: spouseTree.spouseFather, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+				for (const sib of spouseTree.spouseFatherSiblings) {
+					rows.push({ closeness: "SIBLING OF FATHER", person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+					if (sib.children && sib.children.length > 0) {
+						for (const cousin of sib.children) {
+							rows.push({ closeness: "1ST COUSIN", person: cousin, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+						}
+					}
+				}
+
+				rows.push({ closeness: "FATHER OF FATHER", person: spouseTree.spousePaternalGrandfather, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+				for (const sib of spouseTree.spousePaternalGrandfatherSiblings) {
+					rows.push({ closeness: "SIBLING OF FATHER OF FATHER", person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+					if (sib.children && sib.children.length > 0) {
+						for (const child of sib.children) {
+							rows.push({ closeness: "1ST COUSIN ONCE RE‑MOVED", person: child, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+							if (child.children && child.children.length > 0) {
+								for (const secondCousin of child.children) {
+									rows.push({ closeness: "2ND COUSIN", person: secondCousin, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+									if (secondCousin.children && secondCousin.children.length > 0) {
+										for (const twiceRemoved of secondCousin.children) {
+											rows.push({ closeness: "2ND COUSIN ONCE RE‑MOVED", person: twiceRemoved, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				rows.push({ closeness: "MOTHER OF FATHER", person: spouseTree.spousePaternalGrandmother, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+				for (const sib of spouseTree.spousePaternalGrandmotherSiblings) {
+					rows.push({ closeness: "SIBLING OF MOTHER OF FATHER", person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+					if (sib.children && sib.children.length > 0) {
+						for (const child of sib.children) {
+							rows.push({ closeness: "1ST COUSIN ONCE RE‑MOVED", person: child, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+							if (child.children && child.children.length > 0) {
+								for (const secondCousin of child.children) {
+									rows.push({ closeness: "2ND COUSIN", person: secondCousin, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+									if (secondCousin.children && secondCousin.children.length > 0) {
+										for (const twiceRemoved of secondCousin.children) {
+											rows.push({ closeness: "2ND COUSIN ONCE RE‑MOVED", person: twiceRemoved, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				let html = "";
+				let entryNum = startNum;
+
+				html += `<div class="entry"><span class="entry-number">${entryNum}.</span><span class="entry-content">SPOUSE TABLE</span><span class="entry-age"></span></div>`;
+				entryNum++;
+
+				html += `<div class="entry"><span class="entry-number">${entryNum}.</span><span class="entry-content">CLOSENESS\tDETAIL</span><span class="entry-age"></span></div>`;
+				entryNum++;
+
+				for (const row of rows) {
+					const detail = formatPersonInline(row.person, true, row.childFormat, row.showSpouse, row.showChildren, row.showExSpouse);
+					html += `<div class="entry"><span class="entry-number">${entryNum}.</span><span class="entry-content">${row.closeness}\t${detail}</span><span class="entry-age"></span></div>`;
+					entryNum++;
+				}
+
+				return { html: html, nextNum: entryNum };
+			}
+			function renderExSpouseTableAsEntries(exSpouseTree, exNumber, referenceDate, startNum) {
+				let rows = [];
+				rows.push({ closeness: "SELF", person: exSpouseTree.exSpouse, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+				if (exSpouseTree.exChildren && exSpouseTree.exChildren.length > 0) {
+					for (const child of exSpouseTree.exChildren) {
+						rows.push({ closeness: "CHILD", person: child, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+					}
+				}
+
+				rows.push({ closeness: "MOTHER", person: exSpouseTree.exSpouseMother, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+				rows.push({ closeness: "FATHER", person: exSpouseTree.exSpouseFather, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+
+				let html = "";
+				let entryNum = startNum;
+
+				html += `<div class="entry"><span class="entry-number">${entryNum}.</span><span class="entry-content">EX ${exNumber} SPOUSE TABLE</span><span class="entry-age"></span></div>`;
+				entryNum++;
+
+				html += `<div class="entry"><span class="entry-number">${entryNum}.</span><span class="entry-content">CLOSENESS\tDETAIL</span><span class="entry-age"></span></div>`;
+				entryNum++;
+
+				for (const row of rows) {
+					const detail = formatPersonInline(row.person, true, row.childFormat, row.showSpouse, row.showChildren, row.showExSpouse);
+					html += `<div class="entry"><span class="entry-number">${entryNum}.</span><span class="entry-content">${row.closeness}\t${detail}</span><span class="entry-age"></span></div>`;
+					entryNum++;
+				}
+
+				return { html: html, nextNum: entryNum };
+			}
+			function isAtLeast10MonthsApart(date1Str, date2Str) {
+				const m = getMultiplier();
+				const d1 = parseDate(date1Str);
+				const d2 = parseDate(date2Str);
+				const earlier = d1.year < d2.year || (d1.year === d2.year && d1.month < d2.month) || (d1.year === d2.year && d1.month === d2.month && d1.day <= d2.day) ? d1 : d2;
+				const later = earlier === d1 ? d2 : d1;
+				const monthsDiff = (later.year - earlier.year) * 12 + (later.month - earlier.month);
+
+				const scaledGap = 10 * m;
+
+				if (monthsDiff > scaledGap) return true;
+				if (monthsDiff < Math.floor(scaledGap)) return false;
+				return later.day >= earlier.day;
+			}
+
+			function generateGivenNames(gender, parentNames = [], inheritChance = 0.5, forbiddenFirstNames = new Set()) {
+				const nameList = getNamesByGender(data.first_names, gender);
+				const isJP = document.getElementById("dataSelector").value === "jp.js"; // CHECK DATASET
+				if (isJP) {
+					inheritChance = 0;
+					if (parentNames && parentNames.length > 0) {
+						parentNames.forEach((n) => forbiddenFirstNames.add(n));
+					}
+				}
+				let names = [];
+				let usedNames = new Set();
+				const r = Math.random();
+				let totalNames = 1;
+				if (!isJP) {
+					if (r > 0.55) totalNames = 2;
+					if (r > 0.92) totalNames = 3;
+				}
+				let firstName = null;
+				let attempts = 0;
+				while (!firstName && attempts < 50) {
+					attempts++;
+					let candidate = null;
+					if (Math.random() < inheritChance && parentNames.length > 0) {
+						const validNames = parentNames.filter((name) => {
+							const nameObj = data.first_names.find((n) => n.name === name);
+							return nameObj && nameObj.gender === gender;
+						});
+						if (validNames.length > 0) {
+							const unusedBySiblings = validNames.filter((n) => !forbiddenFirstNames.has(n));
+							if (unusedBySiblings.length > 0) {
+								candidate = unusedBySiblings[Math.floor(Math.random() * unusedBySiblings.length)];
+							} else if (Math.random() < 0.1) {
+								candidate = validNames[Math.floor(Math.random() * validNames.length)];
+							}
+						}
+					}
+					if (!candidate) {
+						candidate = weightedRandomChoice(nameList);
+					}
+					if (!forbiddenFirstNames.has(candidate)) {
+						firstName = candidate;
+					}
+				}
+				if (!firstName) firstName = weightedRandomChoice(nameList);
+				names.push(firstName);
+				usedNames.add(firstName);
+				for (let i = 1; i < totalNames; i++) {
+					let middleName = null;
+					let midAttempts = 0;
+					while (!middleName && midAttempts < 20) {
+						midAttempts++;
+						let candidate = null;
+						if (Math.random() < inheritChance && parentNames.length > 0) {
+							const validNames = parentNames.filter((name) => {
+								const nameObj = data.first_names.find((n) => n.name === name);
+								return nameObj && nameObj.gender === gender && !usedNames.has(name);
+							});
+							if (validNames.length > 0) {
+								candidate = validNames[Math.floor(Math.random() * validNames.length)];
+							}
+						}
+						if (!candidate) {
+							candidate = weightedRandomChoice(nameList);
+						}
+						if (!usedNames.has(candidate)) {
+							middleName = candidate;
+						}
+					}
+					if (middleName) {
+						names.push(middleName);
+						usedNames.add(middleName);
+					}
+				}
+				return names.join(" ");
+			}
+			function generateCharacter(currentDateStr, gender) {
+				const m = getMultiplier();
+				const minAgeInput = document.getElementById("minAgeInput");
+				const maxAgeInput = document.getElementById("maxAgeInput");
+				const deathDateInput = document.getElementById("deathDateInput");
+				const deathPlaceInput = document.getElementById("deathPlaceInput");
+				const inMilitaryInput = document.getElementById("inMilitaryInput");
+				const anchorPlaceInput = document.getElementById("anchorPlaceInput");
+				const localityStrengthInput = document.getElementById("localityStrengthInput");
+				const stationaryInput = document.getElementById("stationaryInput");
+				let minAge = Math.round(12 * m);
+				let maxAge = Math.round(67 * m);
+				if (minAgeInput && maxAgeInput) {
+					const valMin = parseInt(minAgeInput.value);
+					const valMax = parseInt(maxAgeInput.value);
+					if (!isNaN(valMin) && !isNaN(valMax) && valMin <= valMax) {
+						minAge = Math.round(valMin * m);
+						maxAge = Math.round(valMax * m);
+					}
+				}
+
+				let referenceDate = parseDate(currentDateStr);
+				let customDeathStr = "";
+
+				const localityStrength = anchorPlaceInput && localityStrengthInput ? parseInt(localityStrengthInput.value) : 0;
+				const anchorPlace = anchorPlaceInput ? anchorPlaceInput.value.trim() : "";
+				const stationary = stationaryInput ? stationaryInput.checked : false;
+
+				let placeOfBirth;
+				if (anchorPlace && Math.random() * 100 < localityStrength) {
+					placeOfBirth = anchorPlace;
+				} else {
+					placeOfBirth = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+				}
+
+				const isSubjectLocal = placeOfBirth === anchorPlace;
+
+				if (deathDateInput && deathDateInput.value.trim().length === 8) {
+					const dVal = deathDateInput.value.trim();
+					if (/^\d{8}$/.test(dVal)) {
+						referenceDate = parseDate(dVal);
+						let dPlace = deathPlaceInput && deathPlaceInput.value.trim() ? deathPlaceInput.value.trim() : "UNKNOWN";
+
+						if (stationary) {
+							dPlace = anchorPlace;
+						}
+
+						const formattedDDate = formatDate(referenceDate.year, referenceDate.month, referenceDate.day);
+						const formattedDPlace = applyHistoricalPlaceName(dPlace, formattedDDate);
+						if (inMilitaryInput && inMilitaryInput.checked) {
+							customDeathStr = ` died IN MILITARY-SERVICE IN ${formattedDPlace} ${formattedDDate}`;
+						} else {
+							customDeathStr = ` died ${formattedDPlace} ${formattedDDate}`;
+						}
+					}
+				}
+
+				const age = random(minAge, maxAge);
+				const birthYear = referenceDate.year - age;
+				const birthMonth = random(1, 12);
+				const maxDayList = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+				const maxDay = maxDayList[birthMonth - 1];
+				const birthDay = random(1, maxDay);
+				const birthDateStr = formatDate(birthYear, birthMonth, birthDay);
+				const familyName = weightedRandomChoice(data.family_names);
+				const givenNames = generateGivenNames(gender, [], 0);
+
+				const pM = Math.min(0.95, 0.05 + (0.035 / m) * (age - 18 * m));
+				const isMarried = Math.random() < pM;
+				const bureauMother = generateBureauParent(0, birthDateStr);
+				const bureauFather = generateBureauParent(1, birthDateStr);
+
+				const parentNames = {
+					mother: bureauMother.isBureau ? bureauMother.name : generateGivenNames(0, givenNames.split(" "), 0.1),
+					father: bureauFather.isBureau ? bureauFather.name : generateGivenNames(1, givenNames.split(" "), 0.1),
+				};
+
+				const formattedPlaceOfBirth = applyHistoricalPlaceName(placeOfBirth, birthDateStr);
+				const isOrphan = bureauMother.isBureau || bureauFather.isBureau;
+				const isMilitaryDeath = inMilitaryInput && inMilitaryInput.checked;
+				let result = `${familyName} , ${givenNames} born ${formattedPlaceOfBirth} ${birthDateStr}${customDeathStr} , parents : ${parentNames.mother} & ${parentNames.father}`;
+
+				if (isMarried) {
+					const marriageAge = random(Math.round(18 * m), Math.round(Math.min(age, 40 * m)));
+					const yearsMarried = age - marriageAge;
+					const spouseGender = gender === 1 ? 0 : 1;
+					const rand = Math.random();
+					let spouseAgeDiff;
+					if (rand < 0.44) {
+						spouseAgeDiff = -random(0, Math.round(5 * m));
+					} else if (rand < 0.88) {
+						spouseAgeDiff = random(0, Math.round(5 * m));
+					} else {
+						spouseAgeDiff = Math.random() < 0.5 ? -random(Math.round(6 * m), Math.round(15 * m)) : random(Math.round(6 * m), Math.round(15 * m));
+					}
+					let spouseAge = age + spouseAgeDiff;
+					let loopGuard = 0;
+					while (spouseAge < 18 * m && loopGuard < 50) {
+						spouseAgeDiff = random(0, Math.round(5 * m));
+						spouseAge = age + spouseAgeDiff;
+						loopGuard++;
+					}
+					if (spouseAge < 18 * m) spouseAge = Math.round(18 * m);
+					const spouseBirthYear = referenceDate.year - spouseAge;
+					const spouseNames = generateGivenNames(spouseGender, givenNames.split(" "), 0.1);
+					const spouseBirthDate = generateRandomDate(spouseBirthYear, spouseBirthYear);
+
+					let spousePlace;
+					if (stationary) {
+						if (!isSubjectLocal && Math.random() < 0.5) {
+							spousePlace = anchorPlace;
+						} else {
+							spousePlace = weightedRandomChoice(data.places_of_birth);
+						}
+					} else {
+						spousePlace = weightedRandomChoice(data.places_of_birth);
+					}
+
+					const isSpouseLocal = spousePlace === anchorPlace;
+					const formattedSpousePlace = applyHistoricalPlaceName(spousePlace, spouseBirthDate);
+					result += ` , spouse : ${spouseNames} ${spouseBirthDate} ${formattedSpousePlace}`;
+					const pC = Math.min(0.9, 0.1 + (0.03 / m) * yearsMarried);
+					const hasChildren = Math.random() < pC;
+
+					if (!isSubjectLocal && !isSpouseLocal && !hasChildren && stationary) {
+						spousePlace = anchorPlace;
+						result = result.replace(formattedSpousePlace, applyHistoricalPlaceName(spousePlace, spouseBirthDate));
+					}
+
+					if (hasChildren) {
+						let numChildren = 1;
+						for (let i = 0; i < 5; i++) {
+							if (Math.random() < 0.7) numChildren++;
+							else break;
+						}
+						const allParentNames = givenNames.split(" ").concat(spouseNames.split(" "));
+						let tempChildren = [];
+						let siblingFirstNames = new Set();
+						const motherAge = gender === 0 ? age : spouseAge;
+						const menopauseLimit = getMenopauseAge();
+						const yearsSinceMenopause = Math.max(0, motherAge - menopauseLimit);
+						const minChildAge = yearsSinceMenopause;
+
+						const scaledMinMotherAge = Math.round(MIN_MOTHER_AGE * m);
+						const maxChildAge = Math.min(yearsMarried, motherAge - scaledMinMotherAge);
+
+						if (maxChildAge > minChildAge) {
+							const startYear = referenceDate.year - maxChildAge;
+							const endYear = referenceDate.year - minChildAge;
+							let daysPassedInCurrentYear = 0;
+							for (let m = 0; m < referenceDate.month - 1; m++) {
+								daysPassedInCurrentYear += maxDayList[m];
+							}
+							daysPassedInCurrentYear += referenceDate.day;
+							let yearOptions = [];
+							let totalWeight = 0;
+							for (let y = startYear; y <= endYear; y++) {
+								let weight = y === referenceDate.year ? daysPassedInCurrentYear : 365;
+								if (weight > 0) {
+									yearOptions.push({
+										y: y,
+										weight: weight,
+									});
+									totalWeight += weight;
+								}
+							}
+							for (let i = 0; i < numChildren; i++) {
+								const childGender = Math.random() < 0.5 ? 1 : 0;
+								let childBirthDate;
+								let attempts = 0;
+								let success = false;
+								do {
+									let childBirthYear = endYear;
+									if (totalWeight > 0) {
+										let rnd = Math.random() * totalWeight;
+										for (let opt of yearOptions) {
+											rnd -= opt.weight;
+											if (rnd <= 0) {
+												childBirthYear = opt.y;
+												break;
+											}
+										}
+									}
+									let dayLimit = childBirthYear === referenceDate.year ? daysPassedInCurrentYear : 365;
+									let randomDayIndex = Math.floor(Math.random() * dayLimit) + 1;
+									let m = 0;
+									let tempDay = randomDayIndex;
+									while (m < 11 && tempDay > maxDayList[m]) {
+										tempDay -= maxDayList[m];
+										m++;
+									}
+									let childBirthMonth = m + 1;
+									let childBirthDay = tempDay;
+									childBirthDate = formatDate(childBirthYear, childBirthMonth, childBirthDay);
+									let collision = false;
+									for (let j = 0; j < tempChildren.length; j++) {
+										if (!isAtLeast10MonthsApart(tempChildren[j].date, childBirthDate)) {
+											collision = true;
+											break;
+										}
+									}
+									if (!collision) success = true;
+									attempts++;
+								} while (!success && attempts < 100);
+								if (success) {
+									const childNames = generateGivenNames(childGender, allParentNames, 0.2, siblingFirstNames);
+									const firstName = childNames.split(" ")[0];
+									siblingFirstNames.add(firstName);
+									tempChildren.push({
+										names: childNames,
+										date: childBirthDate,
+									});
+								}
+							}
+						}
+						tempChildren.sort((a, b) => a.date.localeCompare(b.date));
+						let childrenStr = [];
+						let previousChildPlace = null;
+						let hasReachedAnchor = false;
+
+						for (let i = 0; i < tempChildren.length; i++) {
+							let childPlace;
+							const isLastChild = i === tempChildren.length - 1;
+
+							if (stationary) {
+								if (isSubjectLocal || isSpouseLocal) {
+									childPlace = anchorPlace;
+								} else {
+									if (hasReachedAnchor) {
+										childPlace = anchorPlace;
+									} else if (isLastChild) {
+										childPlace = anchorPlace;
+									} else {
+										if (Math.random() < 0.4) {
+											childPlace = anchorPlace;
+											hasReachedAnchor = true;
+										} else {
+											childPlace = weightedRandomChoice(data.places_of_birth);
+										}
+									}
+								}
+							} else {
+								if (i === 0) {
+									childPlace = Math.random() < 0.3 ? placeOfBirth : spousePlace;
+								} else {
+									if (Math.random() < 0.2) {
+										childPlace = weightedRandomChoice(data.places_of_birth);
+									} else {
+										childPlace = previousChildPlace;
+									}
+								}
+							}
+
+							previousChildPlace = childPlace;
+							const formattedChildPlace = applyHistoricalPlaceName(childPlace, tempChildren[i].date);
+							childrenStr.push(`${tempChildren[i].names} ${formattedChildPlace} ${tempChildren[i].date}`);
+						}
+						if (childrenStr.length > 0) {
+							result += ` , children : ${childrenStr.join(" , ")}`;
+						}
+					}
+				} else if (!isSubjectLocal && stationary) {
+					placeOfBirth = anchorPlace;
+					result = result.replace(formattedPlaceOfBirth, applyHistoricalPlaceName(placeOfBirth, birthDateStr));
+				}
+				const bYear = parseDate(birthDateStr).year;
+				const prob = getMaskProbability(bYear);
+				const shouldMask = Math.random() < prob;
+
+				if (shouldMask) {
+					const applyPadding = (str) => str.replace(/(\d{4})\/\d{2}\/\d{2}/g, (match, year) => `${year}/07/01`);
+
+					if (!isOrphan) {
+						const formattedBirthDate = birthDateStr;
+						const maskedBirth = applyPadding(formattedBirthDate);
+						result = result.replace(formattedBirthDate, maskedBirth);
+					}
+
+					if (result.includes(", spouse")) {
+						let parts = result.split(", spouse");
+						parts[1] = applyPadding(parts[1]);
+						result = parts[0] + ", spouse" + parts[1];
+					} else if (result.includes(", children")) {
+						let parts = result.split(", children");
+						parts[1] = applyPadding(parts[1]);
+						result = parts[0] + ", children" + parts[1];
+					}
+				}
+
+				return {
+					text: result,
+					birthDate: birthDateStr,
+				};
+			}
+			document.getElementById("copyAll").addEventListener("click", function () {
+				const output = document.getElementById("output");
+				const tables = output.querySelectorAll(".family-tree-table");
+				let textToCopy = "";
+
+				if (tables.length > 0) {
+					tables.forEach((table) => {
+						const rows = table.querySelectorAll("tr");
+						rows.forEach((row) => {
+							const cells = row.querySelectorAll("td");
+							if (cells.length >= 2) {
+								textToCopy += cells[0].innerText.trim() + "\t" + cells[1].innerText.trim() + "\n";
+							}
+						});
+						textToCopy += "\n";
+					});
+				} else {
+					const entries = output.querySelectorAll(".entry-content");
+					entries.forEach((content) => {
+						textToCopy += content.innerText.trim() + "\n";
+					});
+				}
+
+				if (!textToCopy.trim()) {
+					alert("No results to copy");
+					return;
+				}
+
+				navigator.clipboard.writeText(textToCopy.trim());
+			});
+			document.getElementById("createMale").addEventListener("click", function () {
+				const birthDate = document.getElementById("birthDate").value;
+				if (!/^\d{8}$/.test(birthDate)) {
+					alert("Please enter a valid date in YYYYMMDD format");
+					return;
+				}
+				const formattedDate = formatDate(parseInt(birthDate.substring(0, 4)), parseInt(birthDate.substring(4, 6)), parseInt(birthDate.substring(6, 8)));
+				const output = document.getElementById("output");
+				output.innerHTML = "";
+				const isFamilyTree = document.getElementById("familyTreeToggle").checked;
+				const amount = parseInt(document.getElementById("amountInput").value) || 43;
+
+				if (isFamilyTree) {
+					for (let i = 1; i <= 1; i++) {
+						const tree = generateFamilyTree(formattedDate, 1);
+						const treeHtml = renderFamilyTreeTable(tree, formattedDate);
+						const div = document.createElement("div");
+						div.className = "entry";
+						div.innerHTML = `<span class="entry-number">${i}.</span><span class="entry-content">${treeHtml}</span><span class="entry-age"></span>`;
+						output.appendChild(div);
+					}
+				} else {
+					const m = getMultiplier();
+					let characters = [];
+					for (let i = 0; i < amount; i++) {
+						const char = generateCharacter(formattedDate, 1);
+						if (char) characters.push(char);
+					}
+
+					characters.sort((a, b) => a.text.localeCompare(b.text));
+
+					characters.forEach((character, i) => {
+						const div = document.createElement("div");
+						div.className = "entry";
+						const rawAge = calculateDetailedAge(character.birthDate, formattedDate, 1);
+						const adjAge = calculateDetailedAge(character.birthDate, formattedDate, m);
+						div.innerHTML = `
+                <span class="entry-number">${i + 1}.</span>
+                <span class="entry-content">${character.text}</span>
+                <span class="entry-age">${rawAge}<br/>${adjAge}</span>
+            `;
+						output.appendChild(div);
+					});
+				}
+			});
+
+			document.getElementById("createFemale").addEventListener("click", function () {
+				const birthDate = document.getElementById("birthDate").value;
+				if (!/^\d{8}$/.test(birthDate)) {
+					alert("Please enter a valid date in YYYYMMDD format");
+					return;
+				}
+				const formattedDate = formatDate(parseInt(birthDate.substring(0, 4)), parseInt(birthDate.substring(4, 6)), parseInt(birthDate.substring(6, 8)));
+				const output = document.getElementById("output");
+				output.innerHTML = "";
+				const isFamilyTree = document.getElementById("familyTreeToggle").checked;
+				const amount = parseInt(document.getElementById("amountInput").value) || 43;
+
+				if (isFamilyTree) {
+					for (let i = 1; i <= 1; i++) {
+						const tree = generateFamilyTree(formattedDate, 0);
+						const treeHtml = renderFamilyTreeTable(tree, formattedDate);
+						const div = document.createElement("div");
+						div.className = "entry";
+						div.innerHTML = `<span class="entry-number">${i}.</span><span class="entry-content">${treeHtml}</span><span class="entry-age"></span>`;
+						output.appendChild(div);
+					}
+				} else {
+					const m = getMultiplier();
+					let characters = [];
+					for (let i = 0; i < amount; i++) {
+						const char = generateCharacter(formattedDate, 0);
+						if (char) characters.push(char);
+					}
+
+					characters.sort((a, b) => a.text.localeCompare(b.text));
+
+					characters.forEach((character, i) => {
+						const div = document.createElement("div");
+						div.className = "entry";
+						const rawAge = calculateDetailedAge(character.birthDate, formattedDate, 1);
+						const adjAge = calculateDetailedAge(character.birthDate, formattedDate, m);
+						div.innerHTML = `
+                <span class="entry-number">${i + 1}.</span>
+                <span class="entry-content">${character.text}</span>
+                <span class="entry-age">${rawAge}<br/>${adjAge}</span>
+            `;
+						output.appendChild(div);
+					});
+				}
+			});
+			document.getElementById("createMixt").addEventListener("click", function () {
+				const birthDateStr = document.getElementById("birthDate").value;
+				if (!/^\d{8}$/.test(birthDateStr)) {
+					alert("Please enter a valid date in YYYYMMDD format");
+					return;
+				}
+				const formattedDate = formatDate(parseInt(birthDateStr.substring(0, 4)), parseInt(birthDateStr.substring(4, 6)), parseInt(birthDateStr.substring(6, 8)));
+				const output = document.getElementById("output");
+				output.innerHTML = "";
+
+				const amount = parseInt(document.getElementById("amountInput").value) || 43;
+				const ratio = parseFloat(document.getElementById("ratioInput").value) || 1;
+				const m = getMultiplier();
+
+				let characters = [];
+
+				for (let i = 0; i < amount; i++) {
+					const maleProb = Math.pow(0.5, ratio);
+					const gender = Math.random() < maleProb ? 1 : 0;
+
+					const char = generateCharacter(formattedDate, gender);
+					if (char) characters.push(char);
+				}
+
+				characters.sort((a, b) => a.text.localeCompare(b.text));
+
+				characters.forEach((character, i) => {
+					const div = document.createElement("div");
+					div.className = "entry";
+					const rawAge = calculateDetailedAge(character.birthDate, formattedDate, 1);
+					const adjAge = calculateDetailedAge(character.birthDate, formattedDate, m);
+					div.innerHTML = `
+            <span class="entry-number">${i + 1}.</span>
+            <span class="entry-content">${character.text}</span>
+            <span class="entry-age">${rawAge}<br/>${adjAge}</span>
+        `;
+					output.appendChild(div);
+				});
+			});
+			document.getElementById("birthDate").addEventListener("input", function (e) {
+				this.value = this.value.replace(/\D/g, "").substring(0, 8);
+			});
+		</script>
+	</body>
+</html>
