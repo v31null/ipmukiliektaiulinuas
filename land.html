@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BORDMET v1.0</title>
+<title>BORDMET</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
 <style>
@@ -350,32 +350,32 @@ textarea:focus { background: #060c14; }
 <body>
 
 <div id="toolbar">
-    <div class="logo">BORD<em>MET</em><span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:6px">v1.0</span></div>
+    <div class="logo">BORD<em>MET</em><span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:6px">v1.5</span></div>
     <div class="sep"></div>
-    <button class="btn" id="btn-draw">⬡ DRAW</button>
-    <button class="btn" id="btn-edit">✦ EDIT PTS</button>
-    <button class="btn danger" id="btn-clear">✕ CLEAR</button>
-    <button class="btn" id="btn-undo">↩ UNDO</button>
-    <button class="btn" id="btn-close">⊙ CLOSE POLYGON</button>
+    <button class="btn" id="btn-draw">DRAW</button>
+    <button class="btn" id="btn-edit">EDIT PTS</button>
+    <button class="btn danger" id="btn-clear">CLEAR</button>
+    <button class="btn" id="btn-undo">UNDO</button>
+    <button class="btn" id="btn-close">CLOSE POLYGON</button>
     <div class="sep"></div>
-    <button class="btn gold" id="btn-gen">⇐ MAP→BORDMET</button>
-    <button class="btn gold" id="btn-parse">⇒ PARSE→MAP</button>
+    <button class="btn gold" id="btn-gen">MAP→BORDMET</button>
+    <button class="btn gold" id="btn-parse">PARSE→MAP</button>
     <div class="sep"></div>
-    <button class="btn ok" id="btn-dl-geojson">↓ GEOJSON</button>
-    <button class="btn ok" id="btn-dl-json">↓ JSON</button>
-    <button class="btn gold" id="btn-load-json">⇑ LOAD JSON</button>
+    <button class="btn ok" id="btn-dl-geojson">GEOJSON</button>
+    <button class="btn ok" id="btn-dl-json">JSON</button>
+    <button class="btn gold" id="btn-load-json">LOAD JSON</button>
     <input type="file" id="in-json-file" accept=".json" style="display:none">
-    <button class="btn gold" id="btn-load-geojson">⇑ LOAD GEOJSON</button>
+    <button class="btn gold" id="btn-load-geojson">LOAD GEOJSON</button>
     <input type="file" id="in-geojson-file" accept=".geojson,.json" style="display:none">
-    <button class="btn" id="btn-cp-overpass">⧉ COPY OVERPASS</button>
+    <button class="btn" id="btn-cp-overpass">COPY OVERPASS</button>
 </div>
 
 <div id="main">
     <div id="map-wrap">
         <div id="map"></div>
-        <div id="map-loading">◈ GEOCODING — PLEASE WAIT</div>
-        <div id="map-mode-badge">◈ DRAW MODE — CLICK TO ADD VERTEX — RIGHT-CLICK TO UNDO</div>
-        <div id="map-edit-badge">◈ EDIT MODE — DRAG VERTEX TO MOVE — CLICK VERTEX TO DELETE — CLICK SEGMENT TO INSERT NODE</div>
+        <div id="map-loading">GEOCODING</div>
+        <div id="map-mode-badge">DRAW MODE</div>
+        <div id="map-edit-badge">EDIT MODE</div>
     </div>
 
     <div id="right">
@@ -390,10 +390,9 @@ textarea:focus { background: #060c14; }
 
         <div class="tp on" id="tp-bordmet">
             <div class="tp-hdr">
-                <span>BORDMET/1.0 — COMPACT BORDER DESCRIPTION FORMAT</span>
+                <span>BORDMET/1.5 — COMPACT BORDER DESCRIPTION FORMAT</span>
                 <button class="btn copy-btn" data-src="ta-bordmet">COPY</button>
             </div>
-            <textarea id="ta-bordmet" placeholder="BORDMET/1.0 ID=BORDER1 DATE=20260224Z DATUM=WGS84 REF=OSM-v2025&#10;F C BERLIN O50KM@N M TW T HAMBURG O10KM@S CL&#10;&#10;— Draw a polygon and click MAP→BORDMET&#10;— Or type BORDMET code and click PARSE→MAP&#10;&#10;ENTITY TYPES: C=CITY  T=TOWN  V=VILLAGE  CO=COORDINATE&#10;               MT=MOUNTAIN  RV=RIVER  RD=ROAD  ST=STREET&#10;&#10;OFFSETS:  O{dist}{unit}@{dir}  e.g. O50KM@N  O300M@SE&#10;UNITS:    KM M MI FT NM&#10;DIRS:     N NE E SE S SW W NW  or  AZI{000-359}&#10;&#10;ACTIONS:  F=FROM/START  M=MOVE/THENCE  TW=TOWARDS  CL=CLOSE"></textarea>
         </div>
 
         <div class="tp" id="tp-prose">
@@ -414,7 +413,7 @@ textarea:focus { background: #060c14; }
 
         <div class="tp" id="tp-geojson">
             <div class="tp-hdr">
-                <span>GEOJSON — WGS84 GEOMETRY EXPORT</span>
+                <span>GEOJSON — WGS77 GEOMETRY EXPORT</span>
                 <button class="btn copy-btn" data-src="ta-geojson">COPY</button>
             </div>
             <textarea id="ta-geojson" readonly placeholder="GeoJSON will appear here…&#10;&#10;Compatible with: QGIS · ArcGIS · MapBox · Leaflet · PostGIS"></textarea>
@@ -448,7 +447,7 @@ textarea:focus { background: #060c14; }
     <div class="sb-cell"><span class="lbl">PTS</span><span class="val" id="sb-pts">0</span></div>
     <div class="sb-cell"><span class="lbl">CLOSED</span><span class="val" id="sb-closed">—</span></div>
     <div class="sb-cell"><span class="lbl">STATUS</span><span class="val" id="sb-status">READY</span></div>
-    <div class="sb-cell" style="margin-left:auto;border-left:1px solid var(--border);border-right:none"><span class="lbl">DATUM</span><span class="val">WGS84</span></div>
+    <div class="sb-cell" style="margin-left:auto;border-left:1px solid var(--border);border-right:none"><span class="lbl">DATUM</span><span class="val">WGS77</span></div>
     <div class="sb-cell"><span class="lbl">REF</span><span class="val">OSM-v2025</span></div>
 </div>
 
@@ -549,7 +548,7 @@ function geoQ(item) {
 const GEOAPIFY_KEY = (function() {
     let key = '';
     while (!key || !key.trim()) {
-        key = prompt('BORDMET v1.0 — Enter your Geoapify API key to enable geocoding:') || '';
+        key = prompt('BORDMET v1.5 — Enter your Geoapify API key to enable geocoding:') || '';
     }
     return key.trim();
 })();
@@ -1000,7 +999,7 @@ function buildFromGeoData(gd, work) {
         legObjs.push(obj);
     });
 
-    const code = `BORDMET/1.0 ID=BORDER1 DATE=${ds} DATUM=WGS84 REF=OSM-v2025\n`
+    const code = `BORDMET/1.5 ID=BORDER1 DATE=${ds} DATUM=WGS77 REF=OSM-v2026\n`
         + legStrs.join('\n') + (cl ? '\nCL' : '');
 
     document.getElementById('ta-bordmet').value = code;
@@ -1009,8 +1008,8 @@ function buildFromGeoData(gd, work) {
     document.getElementById('ta-prose').value = prose;
 
     const bjson = {
-        format:'BORDMET/JSON', version:'1.0', id:'BORDER1',
-        date:ds, datum:'WGS84', ref:'OSM-v2025',
+        format:'BORDMET/JSON', version:'1.5', id:'BORDER1',
+        date:ds, datum:'WGS77', ref:'OSM-v2026',
         bordmet_code: code,
         human_prose: prose,
         legs: legObjs,
