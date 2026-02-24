@@ -41,7 +41,7 @@ def fetch(query):
         for attempt in range(4):
             try:
                 print(f"  -> {server}", flush=True)
-                req = urllib.request.Request(server, data=data, headers={"User-Agent": "BORDMET/1.0"})
+                req = urllib.request.Request(server, data=data, headers={"User-Agent": "BORDMET/1.5"})
                 with urllib.request.urlopen(req, timeout=timeout) as r:
                     return json.loads(r.read().decode("utf-8"))
             except urllib.error.HTTPError as e:
