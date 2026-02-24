@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BORDMET v1.0</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700&display=swap');
+
+:root {
+    --bg:       #060b10;
+    --panel:    #0b1520;
+    --panel2:   #0e1c2d;
+    --border:   #1a3354;
+    --accent:   #00d4ff;
+    --gold:     #e8a020;
+    --text:     #7fb0cc;
+    --bright:   #cce6f7;
+    --dim:      #2e5c7a;
+    --danger:   #ff4455;
+    --ok:       #00e890;
+    --mono:     'Share Tech Mono', 'Courier New', monospace;
+    --sans:     'Barlow Condensed', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+}
+
+#toolbar {
+    height: 42px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+}
+
+#toolbar::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--accent) 30%, var(--gold) 70%, transparent 100%);
+    opacity: 0.25;
+}
+
+.logo {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    white-space: nowrap;
+    margin-right: 4px;
+}
+
+.logo em { color: var(--gold); font-style: normal; }
+
+.sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+
+.btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    padding: 4px 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.12s;
+    white-space: nowrap;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.06); }
+.btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.1); }
+.btn.ok { border-color: var(--dim); color: var(--dim); }
+.btn.ok:hover { border-color: var(--ok); color: var(--ok); background: rgba(0,232,144,0.06); }
+.btn.danger:hover { border-color: var(--danger); color: var(--danger); background: rgba(255,68,85,0.06); }
+.btn.gold:hover { border-color: var(--gold); color: var(--gold); background: rgba(232,160,32,0.06); }
+
+#main {
+    display: flex;
+    height: calc(100vh - 42px - 26px);
+}
+
+#map-wrap {
+    flex: 0 0 60%;
+    position: relative;
+    border-right: 1px solid var(--border);
+}
+
+#map { width:100%; height:100%; }
+
+#map-loading {
+    display: none;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(6,11,16,0.92);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 5px 18px;
+    font-size: 10px;
+    letter-spacing: 3px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+#map-mode-badge {
+    display: none;
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,212,255,0.12);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 4px 14px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+#map-edit-badge {
+    display: none;
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(232,160,32,0.14);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 4px 14px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+#right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--panel);
+}
+
+#tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--panel2);
+}
+
+.tab {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    padding: 0 13px;
+    height: 30px;
+    cursor: pointer;
+    color: var(--dim);
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--border);
+    border-bottom: 2px solid transparent;
+    text-transform: uppercase;
+    transition: all 0.12s;
+}
+
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); background: rgba(0,212,255,0.04); }
+
+.tp {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.tp.on { display: flex; }
+
+.tp-hdr {
+    font-size: 9px;
+    letter-spacing: 2px;
+    padding: 5px 10px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel2);
+    color: var(--dim);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+
+.tp-hdr .copy-btn {
+    font-size: 9px;
+    padding: 2px 8px;
+    height: 20px;
+    letter-spacing: 1px;
+}
+
+textarea {
+    flex: 1;
+    background: var(--bg);
+    color: var(--bright);
+    border: none;
+    outline: none;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    padding: 10px 12px;
+    resize: none;
+    line-height: 1.65;
+    tab-size: 2;
+}
+
+textarea::placeholder { color: var(--dim); font-size: 10.5px; }
+textarea:focus { background: #060c14; }
+
+#point-list {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--bg);
+}
+
+.pt-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 12px;
+    border-bottom: 1px solid rgba(26,51,84,0.4);
+    font-size: 10px;
+    color: var(--dim);
+}
+
+.pt-row:hover { background: var(--panel2); }
+.pt-row .n { color: var(--accent); width: 24px; flex-shrink: 0; }
+.pt-row .c { color: var(--text); flex: 1; }
+.pt-row .p { color: var(--gold); font-size: 9px; max-width: 160px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pt-row .del { color: var(--dim); cursor: pointer; padding: 0 4px; font-size: 11px; }
+.pt-row .del:hover { color: var(--danger); }
+
+#coord-row {
+    display: flex;
+    gap: 6px;
+    padding: 7px;
+    border-top: 1px solid var(--border);
+    background: var(--panel2);
+    flex-shrink: 0;
+}
+
+#coord-row input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--bright);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 7px;
+    outline: none;
+    min-width: 0;
+}
+
+#coord-row input:focus { border-color: var(--accent); }
+#coord-row input::placeholder { color: var(--dim); }
+
+#statusbar {
+    height: 26px;
+    background: var(--panel2);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    font-size: 9px;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.sb-cell {
+    padding: 0 12px;
+    border-right: 1px solid var(--border);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.sb-cell .lbl { color: var(--dim); }
+.sb-cell .val { color: var(--text); }
+.sb-cell .val.ok { color: var(--ok); }
+.sb-cell .val.warn { color: var(--gold); }
+.sb-cell .val.err { color: var(--danger); }
+
+#notif {
+    position: fixed;
+    bottom: 34px;
+    right: 12px;
+    background: var(--panel2);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 6px 14px;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    z-index: 9999;
+    text-transform: uppercase;
+}
+
+#notif.on { opacity: 1; }
+
+.leaflet-container { background: #07101a; }
+.leaflet-bar a { background: var(--panel) !important; border-color: var(--border) !important; color: var(--text) !important; }
+.leaflet-bar a:hover { background: var(--panel2) !important; color: var(--accent) !important; border-color: var(--accent) !important; }
+.leaflet-tooltip { background: rgba(6,11,16,0.9) !important; border: 1px solid var(--accent) !important; color: var(--accent) !important; font-family: var(--mono) !important; font-size: 10px !important; padding: 1px 5px !important; border-radius: 0 !important; box-shadow: none !important; }
+.leaflet-tooltip::before { display: none !important; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); }
+::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+    <div class="logo">BORD<em>MET</em><span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:6px">v1.0</span></div>
+    <div class="sep"></div>
+    <button class="btn" id="btn-draw">⬡ DRAW</button>
+    <button class="btn" id="btn-edit">✦ EDIT PTS</button>
+    <button class="btn danger" id="btn-clear">✕ CLEAR</button>
+    <button class="btn" id="btn-undo">↩ UNDO</button>
+    <button class="btn" id="btn-close">⊙ CLOSE POLYGON</button>
+    <div class="sep"></div>
+    <button class="btn gold" id="btn-gen">⇐ MAP→BORDMET</button>
+    <button class="btn gold" id="btn-parse">⇒ PARSE→MAP</button>
+    <div class="sep"></div>
+    <button class="btn ok" id="btn-dl-geojson">↓ GEOJSON</button>
+    <button class="btn ok" id="btn-dl-json">↓ JSON</button>
+    <button class="btn gold" id="btn-load-json">⇑ LOAD JSON</button>
+    <input type="file" id="in-json-file" accept=".json" style="display:none">
+    <button class="btn gold" id="btn-load-geojson">⇑ LOAD GEOJSON</button>
+    <input type="file" id="in-geojson-file" accept=".geojson,.json" style="display:none">
+    <button class="btn" id="btn-cp-overpass">⧉ COPY OVERPASS</button>
+</div>
+
+<div id="main">
+    <div id="map-wrap">
+        <div id="map"></div>
+        <div id="map-loading">◈ GEOCODING — PLEASE WAIT</div>
+        <div id="map-mode-badge">◈ DRAW MODE — CLICK TO ADD VERTEX — RIGHT-CLICK TO UNDO</div>
+        <div id="map-edit-badge">◈ EDIT MODE — DRAG VERTEX TO MOVE — CLICK VERTEX TO DELETE — CLICK SEGMENT TO INSERT NODE</div>
+    </div>
+
+    <div id="right">
+        <div id="tabs">
+            <button class="tab active" data-t="bordmet">BORDMET CODE</button>
+            <button class="tab" data-t="prose">PROSE</button>
+            <button class="tab" data-t="bjson">BORDMET JSON</button>
+            <button class="tab" data-t="geojson">GEOJSON</button>
+            <button class="tab" data-t="overpass">OVERPASS QL</button>
+            <button class="tab" data-t="points">VERTICES</button>
+        </div>
+
+        <div class="tp on" id="tp-bordmet">
+            <div class="tp-hdr">
+                <span>BORDMET/1.0 — COMPACT BORDER DESCRIPTION FORMAT</span>
+                <button class="btn copy-btn" data-src="ta-bordmet">COPY</button>
+            </div>
+            <textarea id="ta-bordmet" placeholder="BORDMET/1.0 ID=BORDER1 DATE=20260224Z DATUM=WGS84 REF=OSM-v2025&#10;F C BERLIN O50KM@N M TW T HAMBURG O10KM@S CL&#10;&#10;— Draw a polygon and click MAP→BORDMET&#10;— Or type BORDMET code and click PARSE→MAP&#10;&#10;ENTITY TYPES: C=CITY  T=TOWN  V=VILLAGE  CO=COORDINATE&#10;               MT=MOUNTAIN  RV=RIVER  RD=ROAD  ST=STREET&#10;&#10;OFFSETS:  O{dist}{unit}@{dir}  e.g. O50KM@N  O300M@SE&#10;UNITS:    KM M MI FT NM&#10;DIRS:     N NE E SE S SW W NW  or  AZI{000-359}&#10;&#10;ACTIONS:  F=FROM/START  M=MOVE/THENCE  TW=TOWARDS  CL=CLOSE"></textarea>
+        </div>
+
+        <div class="tp" id="tp-prose">
+            <div class="tp-hdr">
+                <span>HUMAN-READABLE LEGAL PROSE (AUTO-GENERATED)</span>
+                <button class="btn copy-btn" data-src="ta-prose">COPY</button>
+            </div>
+            <textarea id="ta-prose" readonly placeholder="Legal prose will appear here after generating BORDMET…"></textarea>
+        </div>
+
+        <div class="tp" id="tp-bjson">
+            <div class="tp-hdr">
+                <span>BORDMET INTERNAL JSON FORMAT</span>
+                <button class="btn copy-btn" data-src="ta-bjson">COPY</button>
+            </div>
+            <textarea id="ta-bjson" readonly placeholder="BORDMET JSON will appear here…"></textarea>
+        </div>
+
+        <div class="tp" id="tp-geojson">
+            <div class="tp-hdr">
+                <span>GEOJSON — WGS84 GEOMETRY EXPORT</span>
+                <button class="btn copy-btn" data-src="ta-geojson">COPY</button>
+            </div>
+            <textarea id="ta-geojson" readonly placeholder="GeoJSON will appear here…&#10;&#10;Compatible with: QGIS · ArcGIS · MapBox · Leaflet · PostGIS"></textarea>
+        </div>
+
+        <div class="tp" id="tp-overpass">
+            <div class="tp-hdr">
+                <span>OVERPASS QL — NAMED PLACE EXTRACTION</span>
+                <button class="btn copy-btn" data-src="ta-overpass">COPY</button>
+            </div>
+            <textarea id="ta-overpass" readonly placeholder="Overpass QL query will appear here after polygon has at least 3 points.&#10;&#10;Run at: https://overpass-turbo.eu&#10;&#10;Servers:&#10;  https://overpass-api.de/api/interpreter  (main)&#10;  https://overpass.kumi.systems/api/interpreter  (fast)&#10;  https://overpass.private.coffee/api/interpreter  (unlimited)"></textarea>
+        </div>
+
+        <div class="tp" id="tp-points">
+            <div class="tp-hdr">
+                <span>VERTEX LIST</span>
+                <span class="val" id="pt-count">0 POINTS</span>
+            </div>
+            <div id="point-list"></div>
+            <div id="coord-row">
+                <input type="number" id="in-lat" placeholder="LAT  e.g. 52.5200" step="any">
+                <input type="number" id="in-lon" placeholder="LON  e.g. 13.4050" step="any">
+                <button class="btn" id="btn-add-pt">+ ADD</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="statusbar">
+    <div class="sb-cell"><span class="lbl">MODE</span><span class="val" id="sb-mode">IDLE</span></div>
+    <div class="sb-cell"><span class="lbl">PTS</span><span class="val" id="sb-pts">0</span></div>
+    <div class="sb-cell"><span class="lbl">CLOSED</span><span class="val" id="sb-closed">—</span></div>
+    <div class="sb-cell"><span class="lbl">STATUS</span><span class="val" id="sb-status">READY</span></div>
+    <div class="sb-cell" style="margin-left:auto;border-left:1px solid var(--border);border-right:none"><span class="lbl">DATUM</span><span class="val">WGS54</span></div>
+    <div class="sb-cell"><span class="lbl">REF</span><span class="val">OSM-v2026</span></div>
+</div>
+
+<div id="notif"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+
+let pts = [];
+let ptData = [];
+let drawing = false;
+let editing = false;
+let polyLayer = null;
+let markerLayers = [];
+let editMarkers = [];
+let segmentMarkers = [];
+
+const map = L.map('map', { center: [51.0, 13.0], zoom: 6 });
+
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
+// ←←← ADD THIS BLOCK (fixes the blank map)
+setTimeout(() => {
+    map.invalidateSize();
+}, 100);
+
+setTimeout(() => {
+    map.invalidateSize();
+}, 500);
+function toR(d) { return d * Math.PI / 180; }
+function toD(r) { return r * 180 / Math.PI; }
+
+function destPt(lat, lon, brng, km) {
+    const R = 6371, d = km / R, b = toR(brng);
+    const la1 = toR(lat), lo1 = toR(lon);
+    const la2 = Math.asin(Math.sin(la1)*Math.cos(d) + Math.cos(la1)*Math.sin(d)*Math.cos(b));
+    const lo2 = lo1 + Math.atan2(Math.sin(b)*Math.sin(d)*Math.cos(la1), Math.cos(d)-Math.sin(la1)*Math.sin(la2));
+    return [toD(la2), toD(lo2)];
+}
+
+function hav(la1, lo1, la2, lo2) {
+    const R = 6371;
+    const dla = toR(la2-la1), dlo = toR(lo2-lo1);
+    const a = Math.sin(dla/2)**2 + Math.cos(toR(la1))*Math.cos(toR(la2))*Math.sin(dlo/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function brng(la1, lo1, la2, lo2) {
+    const y = Math.sin(toR(lo2-lo1))*Math.cos(toR(la2));
+    const x = Math.cos(toR(la1))*Math.sin(toR(la2)) - Math.sin(toR(la1))*Math.cos(toR(la2))*Math.cos(toR(lo2-lo1));
+    return (toD(Math.atan2(y, x)) + 360) % 360;
+}
+
+function bToCard(b) { return ['N','NE','E','SE','S','SW','W','NW','N'][Math.round(b/45)%8]; }
+
+function fmtDist(km) { return km >= 1 ? km.toFixed(1)+'KM' : Math.round(km*1000)+'M'; }
+function fmtCoord(lat, lon) {
+    return Math.abs(lat).toFixed(5)+(lat>=0?'N':'S')+' '+Math.abs(lon).toFixed(5)+(lon>=0?'E':'W');
+}
+
+function distToKm(v, u) {
+    const t = {KM:1, M:0.001, MI:1.60934, FT:0.0003048, NM:1.852};
+    return v * (t[u.toUpperCase()] || 1);
+}
+
+function parseDir(tok) {
+    const c = {N:0,NE:45,E:90,SE:135,S:180,SW:225,W:270,NW:315};
+    if (c[tok] !== undefined) return c[tok];
+    const m = tok.match(/^AZI(\d+\.?\d*)$/);
+    if (m) return parseFloat(m[1]);
+    return null;
+}
+
+function parseOffset(tok) {
+    const m = tok.match(/^O(\d+\.?\d*)(KM|M|MI|FT|NM)@(.+)$/i);
+    if (!m) return null;
+    const km = distToKm(parseFloat(m[1]), m[2]);
+    const bd = parseDir(m[3].toUpperCase());
+    return bd !== null ? {km, bd} : null;
+}
+
+let gq = [], gr = false;
+
+
+
+function geoQ(item) {
+    gq.push(item);
+    if (!gr) processGQ();
+}
+
+// -------------------------------------------------------------
+// BATCH GEOCODER (Used for Map -> Code)
+// Handles 500+ coordinates instantly
+// -------------------------------------------------------------
+const GEOAPIFY_KEY = (function() {
+    let key = '';
+    while (!key || !key.trim()) {
+        key = prompt('BORDMET v1.0 — Enter your Geoapify API key to enable geocoding:') || '';
+    }
+    return key.trim();
+})();
+
+// Delete the old geoQ array entirely. 
+// Do not keep revGeo() or fwdGeo() anywhere in your file!
+
+async function generateBORDMET() {
+    if (pts.length < 2) { toast('DRAW AT LEAST 2 POINTS FIRST'); return; }
+    setLoad(true);
+    setStatus('SUBMITTING BATCH GEOCODE JOB...');
+
+    const work = isClosed() ? pts.slice(0,-1) : pts;
+    const payload = work.map(p => [p[1], p[0]]);
+
+    try {
+        console.warn(`🚀 FIRING EXACTLY ONE POST REQUEST FOR ${payload.length} POINTS`);
+        
+        const postRes = await fetch(`https://api.geoapify.com/v1/batch/geocode/reverse?apiKey=${GEOAPIFY_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload) 
+        });
+
+        if (!postRes.ok) throw new Error(`Batch POST failed: ${postRes.status}`);
+        const jobData = await postRes.json();
+        
+        setStatus(`BATCH ACCEPTED (JOB ID: ${jobData.id}). WAITING FOR SERVER...`);
+        let resultData = null;
+        
+        const checkUrl = jobData.url.includes('apiKey') ? jobData.url : `${jobData.url}&apiKey=${GEOAPIFY_KEY}`;
+
+        while (true) {
+            await new Promise(r => setTimeout(r, 3000)); 
+            
+            console.log("⏳ Checking if Geoapify is done...");
+            const getRes = await fetch(checkUrl);
+            if (!getRes.ok) throw new Error(`Batch GET failed: ${getRes.status}`);
+            
+            const checkData = await getRes.json();
+            if (getRes.status === 200) {
+                console.warn("✅ BATCH COMPLETE! DOWNLOADING RESULTS ARRAY.");
+                resultData = checkData;
+                break;
+            }
+        }
+const gd = new Array(work.length).fill(null);
+        
+        resultData.forEach((batchItem, i) => {
+            // Batch API returns flat objects, NOT GeoJSON features!
+            if (batchItem && batchItem.lat !== undefined && batchItem.lon !== undefined) {
+                const p = batchItem;
+                gd[i] = {
+                    lat: p.lat, lon: p.lon,
+                    address: {
+                        road: p.street || p.highway || p.path,
+                        house_number: p.housenumber,
+                        suburb: p.suburb || p.district || p.neighbourhood,
+                        municipality: p.municipality,
+                        city: p.city, town: p.town, village: p.village || p.hamlet,
+                        county: p.county, state_district: p.state
+                    }
+                };
+            }
+            ptData[i] = gd[i];
+        });
+
+        setLoad(false);
+        buildFromGeoData(gd, work);
+        updateVertexList();
+        switchTab('bordmet');
+
+    } catch (e) {
+        console.error(e);
+        setLoad(false);
+        setStatus('BATCH GEOCODING FAILED');
+        toast('API ERROR. CHECK CONSOLE.');
+    }
+}
+function processGQ() {
+    if (gq.length === 0) { gr = false; return; }
+    gr = true;
+    
+    // Peek at the first item
+    const it = gq[0];
+    it.retries = it.retries || 0;
+
+    let url;
+    if (it.type === 'rev') {
+        url = `https://api.geoapify.com/v1/geocode/reverse?lat=${it.lat}&lon=${it.lon}&apiKey=${GEOAPIFY_KEY}`;
+    } else {
+        url = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(it.name)}&limit=1&apiKey=${GEOAPIFY_KEY}`;
+    }
+
+    fetch(url)
+    .then(r => {
+        if (!r.ok) {
+            if (r.status === 429) throw new Error('429 Rate Limit');
+            throw new Error(`HTTP ${r.status}`);
+        }
+        return r.json();
+    })
+    .then(data => {
+        // Success: Remove item from queue
+        gq.shift();
+
+        let d = null;
+        // Check if Geoapify returned a valid location feature
+        if (data.features && data.features.length > 0) {
+            const p = data.features[0].properties;
+            
+            // Reconstruct the object so it works perfectly with your parsing code
+            d = {
+                lat: p.lat,
+                lon: p.lon,
+                address: {
+                    road: p.street || p.highway || p.path,
+                    house_number: p.housenumber,
+                    suburb: p.suburb || p.district || p.neighbourhood,
+                    municipality: p.municipality,
+                    city: p.city,
+                    town: p.town,
+                    village: p.village || p.hamlet,
+                    county: p.county,
+                    state_district: p.state
+                }
+            };
+        }
+        
+        it.cb(null, d);
+        
+        // Next request after 250ms (4 req/sec)
+        setTimeout(processGQ, 250);
+    })
+    .catch(e => {
+        console.warn(`Geoapify error: ${e.message || e}`);
+        
+        it.retries++;
+        if (it.retries <= 3) {
+            console.log(`Retrying in 5 seconds...`);
+            setTimeout(processGQ, 5000);
+        } else {
+            console.error('Max retries reached. Skipping node.');
+            gq.shift();
+            it.cb(e, null);
+            setTimeout(processGQ, 250);
+        }
+    });
+}
+
+function revGeo(lat, lon, cb) { 
+    geoQ({type:'rev', lat, lon, cb}); 
+}
+function fwdGeo(name, cb) { 
+    geoQ({type:'fwd', name, cb}); 
+}
+function placeName(d) {
+    if (!d || !d.address) return 'UNNAMED';
+    const a = d.address;
+    const parts = [];
+
+    const road = a.road || a.street || a.pedestrian || a.path || a.cycleway || a.footway || a.highway;
+    if (road) {
+        let r = road;
+        if (a.house_number) r += ' ' + a.house_number;
+        parts.push(r.trim());
+    }
+
+    const sub = a.neighbourhood || a.suburb || a.quarter || a.city_district;
+    if (sub) parts.push(sub.trim());
+
+    const district = a.borough || a.municipality;
+    if (district && district !== (a.city||a.town||a.village)) parts.push(district.trim());
+
+    const place = a.village || a.hamlet || a.town || a.city;
+    if (place) parts.push(place.trim());
+
+    if (parts.length === 0) {
+        return a.county || a.state_district || 'UNNAMED';
+    }
+
+    return parts.join(', ');
+}
+function placeType(d) {
+    if (!d || !d.address) return 'P';
+    const a = d.address;
+
+    if (a.road || a.street || a.pedestrian || a.path || a.highway) return 'ST';  // Street
+    if (a.city) return 'C';
+    if (a.town) return 'T';
+    if (a.village || a.hamlet) return 'V';
+    return 'P';  // Point / other
+}
+function isClosed() {
+    if (pts.length < 4) return false;
+    const f = pts[0], l = pts[pts.length-1];
+    return Math.abs(f[0]-l[0]) < 0.00001 && Math.abs(f[1]-l[1]) < 0.00001;
+}
+
+function clearSegmentMarkers() {
+    segmentMarkers.forEach(m => map.removeLayer(m));
+    segmentMarkers = [];
+}
+
+function clearEditMarkers() {
+    editMarkers.forEach(m => map.removeLayer(m));
+    editMarkers = [];
+    clearSegmentMarkers();
+}
+
+function renderEditMarkers() {
+    const count = isClosed() ? pts.length - 1 : pts.length;
+    for (let i = 0; i < count; i++) {
+        const p = pts[i];
+        const icon = L.divIcon({
+            className: '',
+            html: `<div style="width:16px;height:16px;background:${i===0?'#e8a020':'#00d4ff'};border:2px solid #fff;border-radius:2px;cursor:move;display:flex;align-items:center;justify-content:center;font-size:8px;color:#000;font-weight:bold;box-shadow:0 0 5px rgba(0,0,0,0.7);">${i+1}</div>`,
+            iconSize: [16,16],
+            iconAnchor: [8,8]
+        });
+        const marker = L.marker([p[0], p[1]], { icon, draggable: true, autoPan: true }).addTo(map);
+
+        marker.on('drag', e => {
+            const ll = e.target.getLatLng();
+            pts[i] = [ll.lat, ll.lng];
+            ptData[i] = null;
+            if (isClosed() && i === 0) pts[pts.length - 1] = [ll.lat, ll.lng];
+            if (polyLayer) { map.removeLayer(polyLayer); polyLayer = null; }
+            const cl = isClosed();
+            if (pts.length >= 2) {
+                polyLayer = cl
+                    ? L.polygon(pts, {color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:0.07,weight:1.5}).addTo(map)
+                    : L.polyline(pts, {color:'#00d4ff',weight:1.5,dashArray:'7,4'}).addTo(map);
+            }
+        });
+
+        marker.on('dragend', () => {
+            updateStatus();
+            updateVertexList();
+            updateRawGeoJSON();
+            buildOverpass();
+        });
+
+        marker.on('click', e => {
+            if (!editing) return;
+            L.DomEvent.stopPropagation(e);
+            if (pts.length <= 1) { toast('CANNOT DELETE — ONLY 1 POINT LEFT'); return; }
+            if (isClosed() && i === 0) {
+                pts.splice(pts.length - 1, 1);
+                pts.splice(0, 1);
+                ptData.splice(0, 1);
+                if (pts.length >= 3) pts.push([...pts[0]]);
+            } else {
+                pts.splice(i, 1);
+                ptData.splice(i, 1);
+            }
+            renderMap();
+            toast(`VERTEX ${i+1} DELETED`);
+        });
+
+        editMarkers.push(marker);
+    }
+}
+
+function renderMap() {
+    if (polyLayer) { map.removeLayer(polyLayer); polyLayer = null; }
+    markerLayers.forEach(m => map.removeLayer(m));
+    markerLayers = [];
+    clearEditMarkers();
+
+    if (pts.length === 0) { updateStatus(); return; }
+
+    if (editing) {
+        renderEditMarkers();
+    } else {
+        pts.forEach((p, i) => {
+            if (i === pts.length - 1 && isClosed()) return;
+            const m = L.circleMarker([p[0],p[1]], {
+                radius: i === 0 ? 7 : 5,
+                color: i === 0 ? '#e8a020' : '#00d4ff',
+                fillColor: i === 0 ? '#e8a020' : '#00d4ff',
+                fillOpacity: 0.85,
+                weight: 1.5
+            });
+            m.bindTooltip(`${i+1}`, {permanent:true, direction:'right'});
+            m.addTo(map);
+            markerLayers.push(m);
+        });
+    }
+
+    if (pts.length >= 2) {
+        const cl = isClosed();
+        if (cl) {
+            polyLayer = L.polygon(pts, {color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:0.07,weight:1.5}).addTo(map);
+        } else {
+            polyLayer = L.polyline(pts, {color:'#00d4ff',weight:1.5,dashArray:'7,4'}).addTo(map);
+        }
+    }
+
+    updateStatus();
+    updateVertexList();
+    updateRawGeoJSON();
+    buildOverpass();
+    if (editing) renderSegmentHitTargets();
+}
+
+function updateStatus() {
+    document.getElementById('sb-pts').textContent = pts.length;
+    const cl = isClosed();
+    const el = document.getElementById('sb-closed');
+    el.textContent = cl ? 'YES' : pts.length >= 3 ? 'NO' : '—';
+    el.className = 'val ' + (cl ? 'ok' : pts.length >= 3 ? 'warn' : '');
+}
+
+function updateVertexList() {
+    const el = document.getElementById('point-list');
+    document.getElementById('pt-count').textContent = pts.length + ' POINTS';
+    el.innerHTML = '';
+    pts.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.className = 'pt-row';
+        const name = ptData[i] ? placeName(ptData[i]) : '';
+        row.innerHTML = `<span class="n">${i+1}</span><span class="c">${p[0].toFixed(5)}, ${p[1].toFixed(5)}</span><span class="p">${name}</span><span class="del" data-i="${i}">✕</span>`;
+        el.appendChild(row);
+    });
+    el.querySelectorAll('.del').forEach(d => {
+        d.addEventListener('click', e => {
+            const i = parseInt(e.target.dataset.i);
+            pts.splice(i,1);
+            ptData.splice(i,1);
+            renderMap();
+        });
+    });
+}
+
+function updateRawGeoJSON() {
+    if (pts.length < 2) return;
+    const coords = pts.map(p=>[p[1],p[0]]);
+    const cl = isClosed();
+    const geoj = {
+        type:'FeatureCollection',
+        name:'Border_DRAFT',
+        crs:{type:'name',properties:{name:'urn:ogc:def:crs:OGC:1.3:CRS84'}},
+        features:[{
+            type:'Feature',
+            properties:{id:'DRAFT',status:'RAW_COORDINATES'},
+            geometry:{
+                type: cl ? 'Polygon' : 'LineString',
+                coordinates: cl ? [coords] : coords
+            }
+        }]
+    };
+    document.getElementById('ta-geojson').value = JSON.stringify(geoj, null, 2);
+}
+
+function buildOverpass() {
+    if (pts.length < 3) return;
+    const ring = isClosed() ? pts : [...pts, pts[0]];
+    const poly = ring.map(p=>`${p[0].toFixed(6)} ${p[1].toFixed(6)}`).join(' ');
+
+    const band = (types, timeout) =>
+        `[out:json][timeout:${timeout}];\n(\n  node["place"~"^(${types})$"](poly:"${poly}");\n  relation["place"~"^(${types})$"](poly:"${poly}");\n);\nout tags center;`;
+
+    const bands = [
+        `// BAND 1 - MACRO REGIONS  (run first, fastest)\n` + band('region|province|state|district|county', 120),
+        `// BAND 2 - CITIES & MUNICIPALITIES\n` + band('municipality|city|town', 180),
+        `// BAND 3 - VILLAGES & HAMLETS\n` + band('village|hamlet|isolated_dwelling', 300),
+        `// BAND 4 - LOCAL AREAS  (largest response, run last)\n` + band('suburb|quarter|neighbourhood|allotments', 600),
+    ];
+
+    const footer = `\n\n// SERVERS:\n//   https://overpass-api.de/api/interpreter\n//   https://overpass.kumi.systems/api/interpreter\n//   https://overpass.private.coffee/api/interpreter\n//\n// Run: python overpass_fetch.py\n// Output: places.json  [{name, place, rank, coordinates:[lat,lon]}]`;
+
+    document.getElementById('ta-overpass').value = bands.join('\n\n\n') + footer;
+}
+function buildFromGeoData(gd, work) {
+    const now = new Date();
+    const ds = now.getUTCFullYear().toString()
+        + String(now.getUTCMonth()+1).padStart(2,'0')
+        + String(now.getUTCDate()).padStart(2,'0') + 'Z';
+
+    const legStrs = [], legObjs = [];
+    const cl = isClosed();
+
+    work.forEach((p, i) => {
+        const d = gd[i];
+        const act = i === 0 ? 'F' : 'M TW';
+        let str, obj;
+        if (d) {
+            const pn = placeName(d);
+            const pt_ = placeType(d);
+            const plat = parseFloat(d.lat);
+            const plon = parseFloat(d.lon);
+
+            let lastNamedEntity = null;
+            for (let j = i-1; j >= 0; j--) {
+                if (legObjs[j] && legObjs[j].entity && legObjs[j].entity.type !== 'FPP') {
+                    lastNamedEntity = legObjs[j].entity.name;
+                    break;
+                }
+            }
+            const sameAsPrev = lastNamedEntity && lastNamedEntity === pn;
+
+            if (sameAsPrev) {
+                const prevPt = work[i-1];
+                const fppDist = hav(prevPt[0], prevPt[1], p[0], p[1]);
+                const fppBd = brng(prevPt[0], prevPt[1], p[0], p[1]);
+                const fppCard = bToCard(fppBd);
+                const fppDstr = fmtDist(fppDist);
+                str = `${act} FPP O${fppDstr}@${fppCard}`;
+                obj = {
+                    seq: i, action: 'M', towards: true,
+                    entity: {type: 'FPP', name: 'FPP', coord: null},
+                    offset: {distKm: fppDist, bearing: fppBd, cardinal: fppCard},
+                    point: [p[0], p[1]],
+                    nominatim: d
+                };
+            } else if (isNaN(plat) || isNaN(plon)) {
+                str = pn === 'UNNAMED'
+                    ? `${act} ${pt_} ${pn} CO ${fmtCoord(p[0], p[1])}`
+                    : `${act} ${pt_} ${pn}`;
+                obj = {
+                    seq: i, action: i===0?'F':'M', towards: i>0,
+                    entity: {type:pt_, name:pn, coord:null},
+                    offset: null,
+                    point: [p[0], p[1]],
+                    nominatim: d
+                };
+            } else {
+                const dist = hav(plat, plon, p[0], p[1]);
+                const bd = brng(plat, plon, p[0], p[1]);
+                const card = bToCard(bd);
+                const dstr = fmtDist(dist);
+
+                str = dist < 0.05
+                    ? `${act} ${pt_} ${pn}${pn==='UNNAMED'?' CO '+fmtCoord(p[0],p[1]):''}`
+                    : `${act} ${pt_} ${pn} O${dstr}@${card}${pn==='UNNAMED'?' CO '+fmtCoord(p[0],p[1]):''}`;
+
+                obj = {
+                    seq: i, action: i===0?'F':'M', towards: i>0,
+                    entity: {type:pt_, name:pn, coord:[plat, plon]},
+                    offset: dist < 0.05 ? null : {distKm:dist, bearing:bd, cardinal:card},
+                    point: [p[0], p[1]],
+                    nominatim: d
+                };
+            }
+        }
+        legStrs.push(str);
+        legObjs.push(obj);
+    });
+
+    const code = `BORDMET/1.0 ID=BORDER1 DATE=${ds} DATUM=WGS54 REF=OSM-v2026\n`
+        + legStrs.join('\n') + (cl ? '\nCL' : '');
+
+    document.getElementById('ta-bordmet').value = code;
+
+    const prose = buildProse(legObjs, cl);
+    document.getElementById('ta-prose').value = prose;
+
+    const bjson = {
+        format:'BORDMET/JSON', version:'1.0', id:'BORDER1',
+        date:ds, datum:'WGS54', ref:'OSM-v2026',
+        bordmet_code: code,
+        human_prose: prose,
+        legs: legObjs,
+        closure: cl ? {error_m:0.0, valid:true} : {error_m:null, valid:false},
+        geometry_type: cl ? 'Polygon' : 'LineString'
+    };
+    document.getElementById('ta-bjson').value = JSON.stringify(bjson, null, 2);
+
+    buildFullGeoJSON(legObjs, cl, code, prose);
+    buildOverpass();
+    setStatus('BORDMET GENERATED — ' + legObjs.length + ' LEGS');
+    toast('BORDMET GENERATED');
+}
+
+function buildProse(legs, cl) {
+    const tw = {C:'the city of', T:'the town of', V:'the village of', P:'the point of',
+                 CO:'the coordinate', MT:'the mountain of', RV:'the river', RD:'the road', ST:'the street', LK:'the lake of'};
+    const dw = {0:'due north',45:'to the north-east',90:'due east',135:'to the south-east',
+                180:'due south',225:'to the south-west',270:'due west',315:'to the north-west'};
+
+    function dWords(b) { return dw[Math.round(b/45)*45%360] || `bearing ${Math.round(b)} degrees`; }
+    function distW(km) { return km>=1 ? `${km.toFixed(1)} kilometres` : `${Math.round(km*1000)} metres`; }
+
+    let p = '';
+    legs.forEach((leg, i) => {
+        if (leg.entity.type === 'FPP') {
+            const dir = dWords(leg.offset.bearing);
+            const dist = distW(leg.offset.distKm);
+            p += `; thence proceeding ${dist} ${dir}`;
+            return;
+        }
+        const tw_ = tw[leg.entity.type] || 'the place of';
+        const isUnnamed = leg.entity.name === 'UNNAMED';
+        const nm = isUnnamed
+            ? (leg.point ? Math.abs(leg.point[0]).toFixed(0)+(leg.point[0]>=0?'N':'S')+' '+Math.abs(leg.point[1]).toFixed(0)+(leg.point[1]>=0?'E':'W') : 'unnamed point')
+            : (leg.entity.name || `${leg.entity.coord[0].toFixed(5)}N ${leg.entity.coord[1].toFixed(5)}E`);
+        const twLabel = isUnnamed ? 'coordinate' : (tw_ || 'the place of');
+        if (i === 0) {
+            p += leg.offset
+                ? `Commencing at a point situated ${distW(leg.offset.distKm)} ${dWords(leg.offset.bearing)} of ${isUnnamed ? 'coordinate' : tw_} ${nm}`
+                : `Commencing at ${isUnnamed ? 'coordinate' : tw_} ${nm}`;
+        } else {
+            p += `; thence proceeding towards ${isUnnamed ? 'coordinate' : tw_} ${nm}`;
+            if (leg.offset) {
+                const tWord = isUnnamed ? 'coordinate' : ({C:'city',T:'town',V:'village',MT:'mountain',RV:'river',RD:'road',ST:'street',LK:'lake'}[leg.entity.type] || 'place');
+                p += `, but offset ${distW(leg.offset.distKm)} ${dWords(leg.offset.bearing)} of said ${tWord}`;
+            }
+        }
+    });
+    p += cl ? '; thence closing back to the point of beginning.' : '.';
+    return p;
+}
+
+function buildFullGeoJSON(legs, cl, code, prose) {
+    const coords = legs.map(l=>[l.point[1], l.point[0]]);
+    if (cl && coords.length > 0) coords.push([...coords[0]]);
+    const lm = legs.map(l => l.entity.name
+        ? `${l.entity.type==='C'?'city':l.entity.type==='T'?'town':'place'} of ${l.entity.name}`
+        : `${l.entity.coord[0].toFixed(4)}N ${l.entity.coord[1].toFixed(4)}E`);
+    const gj = {
+        type:'FeatureCollection',
+        name:'Border_BORDER1',
+        crs:{type:'name',properties:{name:'urn:ogc:def:crs:OGC:1.3:CRS84'}},
+        features:[{
+            type:'Feature',
+            properties:{id:'BORDER1', prose, bordmet_code:code, landmarks:lm},
+            geometry:{
+                type: cl ? 'Polygon' : 'LineString',
+                coordinates: cl ? [coords] : coords
+            }
+        }]
+    };
+    document.getElementById('ta-geojson').value = JSON.stringify(gj, null, 2);
+}
+
+const ACTS = new Set(['F','M','U','A']);
+const ENTS = new Set(['C','T','V','P','RV','RD','ST','MT','LK','BR','CR','CO']);
+const KWS  = new Set(['F','M','U','A','CL','TW','FL','CRV','INT','ADJ','CO','RMK','PAR','EXCL','INCL','AUTO','COR']);
+
+function isModTok(t) {
+    if (KWS.has(t)||ENTS.has(t)) return true;
+    if (['N','S','E','W','NE','SE','SW','NW'].includes(t)) return true;
+    if (/^O\d/.test(t)||/^\d+\.?\d*(KM|M|MI|FT|NM)/.test(t)||/^AZI\d/.test(t)) return true;
+    if (/^(ID|DATE|DATUM|REF|SEG)=/.test(t)) return true;
+    return false;
+}
+
+async function parseBORDMET() {
+    const raw = document.getElementById('ta-bordmet').value.trim();
+    if (!raw) { toast('NO BORDMET CODE TO PARSE'); return; }
+
+    const toks = raw.replace(/\n/g,' ').split(/\s+/).filter(Boolean).map(t=>t.toUpperCase());
+    const legs = [];
+    let i = 0;
+
+    while (i < toks.length) {
+        const t = toks[i];
+        if (/^BORDMET/.test(t)||/^(ID|DATE|DATUM|REF)=/.test(t)) { i++; continue; }
+        if (t === 'RMK') break;
+        if (t === 'CL') { legs.push({action:'CL'}); i++; continue; }
+        if (ACTS.has(t)) {
+            const leg = {action:t, towards:false, entity:null, offset:null};
+            i++;
+            if (toks[i]==='TW') { leg.towards=true; i++; }
+            if (i < toks.length && toks[i] === 'FPP') {
+                leg.entity = {type:'FPP', name:'FPP', coord:null};
+                i++;
+            } else if (i < toks.length && ENTS.has(toks[i])) {
+                leg.entity = {type:toks[i], name:'', coord:null};
+                i++;
+                if (leg.entity.type === 'CO') {
+                    const lm = (toks[i]||'').match(/^(-?\d+\.?\d*)([NS])?$/);
+                    const om = (toks[i+1]||'').match(/^(-?\d+\.?\d*)([EW])?$/);
+                    if (lm && om) {
+                        let la = parseFloat(lm[1]), lo = parseFloat(om[1]);
+                        if (lm[2]==='S') la=-la;
+                        if (om[2]==='W') lo=-lo;
+                        leg.entity.coord = [la,lo];
+                        i+=2;
+                    }
+                } else {
+                    const parts=[];
+                    while (i<toks.length && !isModTok(toks[i])) { parts.push(toks[i]); i++; }
+                    leg.entity.name = parts.join(' ');
+                }
+            }
+            while (i<toks.length && !ACTS.has(toks[i]) && toks[i]!=='CL' && toks[i]!=='RMK') {
+                const off = parseOffset(toks[i]);
+                if (off) leg.offset = off;
+                i++;
+            }
+            legs.push(leg);
+            continue;
+        }
+        i++;
+    }
+
+    const toRender = legs.filter(l=>l.action!=='CL');
+    if (toRender.length === 0) { toast('NO VALID LEGS FOUND'); return; }
+
+    setLoad(true);
+    setStatus('GEOCODING NAMED PLACES…');
+
+    const resolved = [];
+
+    for (const leg of toRender) {
+        if (!leg.entity) continue;
+        if (leg.entity.type === 'FPP') {
+            const prev = resolved.length > 0 ? resolved[resolved.length - 1] : null;
+            if (prev) {
+                const pt = leg.offset ? destPt(prev[0], prev[1], leg.offset.bd, leg.offset.km) : [...prev];
+                resolved.push(pt);
+            }
+            continue;
+        }
+        if (leg.entity.type === 'CO' && leg.entity.coord) {
+            let pt = [...leg.entity.coord];
+            if (leg.offset) pt = destPt(pt[0], pt[1], leg.offset.bd, leg.offset.km);
+            resolved.push(pt);
+        } else if (leg.entity.name) {
+            await new Promise(res => {
+                geoQ({type:'fwd', name:leg.entity.name, cb:(err,d) => {
+                    if (!err && d) {
+                        let la=parseFloat(d.lat), lo=parseFloat(d.lon);
+                        if (leg.offset) [la,lo]=destPt(la,lo,leg.offset.bd,leg.offset.km);
+                        resolved.push([la,lo]);
+                    }
+                    res();
+                }});
+                if (!gr) processGQ();
+            });
+        }
+    }
+
+    setLoad(false);
+
+    if (resolved.length === 0) { toast('GEOCODING FAILED — CHECK PLACE NAMES'); return; }
+
+    const hasCL = legs.some(l=>l.action==='CL');
+    if (hasCL && resolved.length >= 3) resolved.push([...resolved[0]]);
+
+    pts = resolved;
+    ptData = new Array(pts.length).fill(null);
+    renderMap();
+    if (pts.length > 0) {
+        map.fitBounds(L.latLngBounds(pts.map(p=>[p[0],p[1]])), {padding:[40,40]});
+    }
+    setStatus(`PARSED — ${resolved.length} POINTS PLOTTED`);
+    toast(`${resolved.length} POINTS PLOTTED`);
+}
+
+map.on('click', e => {
+    if (!drawing) return;
+    pts.push([e.latlng.lat, e.latlng.lng]);
+    ptData.push(null);
+    renderMap();
+});
+
+map.on('contextmenu', e => {
+    if (!drawing) return;
+    if (pts.length > 0) {
+        pts.pop(); ptData.pop();
+        renderMap();
+        toast('LAST VERTEX REMOVED');
+    }
+});
+
+document.getElementById('btn-draw').addEventListener('click', function() {
+    drawing = !drawing;
+    if (drawing && editing) {
+        editing = false;
+        document.getElementById('btn-edit').classList.remove('active');
+        document.getElementById('map-edit-badge').style.display = 'none';
+        renderMap();
+    }
+    this.classList.toggle('active', drawing);
+    document.getElementById('map-mode-badge').style.display = drawing ? 'block' : 'none';
+    document.getElementById('sb-mode').textContent = drawing ? 'DRAWING' : 'IDLE';
+    map.getContainer().style.cursor = drawing ? 'crosshair' : '';
+});
+
+document.getElementById('btn-edit').addEventListener('click', function() {
+    if (pts.length === 0) { toast('NO POINTS TO EDIT'); return; }
+    editing = !editing;
+    if (editing && drawing) {
+        drawing = false;
+        document.getElementById('btn-draw').classList.remove('active');
+        document.getElementById('map-mode-badge').style.display = 'none';
+        map.getContainer().style.cursor = '';
+    }
+    this.classList.toggle('active', editing);
+    document.getElementById('map-edit-badge').style.display = editing ? 'block' : 'none';
+    document.getElementById('sb-mode').textContent = editing ? 'EDITING' : 'IDLE';
+    renderMap();
+});
+
+document.getElementById('btn-clear').addEventListener('click', function() {
+    pts=[]; ptData=[];
+    if (polyLayer) { map.removeLayer(polyLayer); polyLayer=null; }
+    markerLayers.forEach(m=>map.removeLayer(m));
+    markerLayers=[];
+    clearEditMarkers();
+    drawing=false;
+    editing=false;
+    document.getElementById('btn-draw').classList.remove('active');
+    document.getElementById('btn-edit').classList.remove('active');
+    document.getElementById('map-mode-badge').style.display='none';
+    document.getElementById('map-edit-badge').style.display='none';
+    document.getElementById('sb-mode').textContent='IDLE';
+    map.getContainer().style.cursor='';
+    ['ta-bordmet','ta-prose','ta-bjson','ta-geojson','ta-overpass'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('point-list').innerHTML='';
+    document.getElementById('pt-count').textContent='0 POINTS';
+    document.getElementById('sb-pts').textContent='0';
+    document.getElementById('sb-closed').textContent='—';
+    document.getElementById('sb-closed').className='val';
+    setStatus('CLEARED');
+});
+
+document.getElementById('btn-undo').addEventListener('click', function() {
+    if (pts.length === 0) return;
+    pts.pop(); ptData.pop();
+    renderMap();
+    toast('VERTEX REMOVED');
+});
+
+document.getElementById('btn-close').addEventListener('click', function() {
+    if (pts.length < 3) { toast('NEED AT LEAST 3 POINTS'); return; }
+    if (!isClosed()) {
+        pts.push([...pts[0]]);
+        ptData.push(null);
+        renderMap();
+        toast('POLYGON CLOSED');
+    } else {
+        toast('ALREADY CLOSED');
+    }
+});
+
+document.getElementById('btn-gen').addEventListener('click', generateBORDMET);
+document.getElementById('btn-parse').addEventListener('click', parseBORDMET);
+
+document.getElementById('btn-dl-geojson').addEventListener('click', function() {
+    const v = document.getElementById('ta-geojson').value;
+    if (!v) { toast('NO GEOJSON READY'); return; }
+    dlText(v, 'border_BORDMET.geojson');
+});
+
+document.getElementById('btn-dl-json').addEventListener('click', function() {
+    const v = document.getElementById('ta-bjson').value;
+    if (!v) { toast('NO JSON READY'); return; }
+    dlText(v, 'border_BORDMET.json');
+});
+
+document.getElementById('btn-cp-overpass').addEventListener('click', function() {
+    const v = document.getElementById('ta-overpass').value;
+    if (!v) { toast('NO OVERPASS QUERY YET'); return; }
+    navigator.clipboard.writeText(v).then(()=>toast('OVERPASS QUERY COPIED'));
+});
+
+document.querySelectorAll('.copy-btn[data-src]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const v = document.getElementById(btn.dataset.src).value;
+        if (!v) { toast('NOTHING TO COPY'); return; }
+        navigator.clipboard.writeText(v).then(()=>toast('COPIED TO CLIPBOARD'));
+    });
+});
+
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => switchTab(tab.dataset.t));
+});
+
+function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.t===name));
+    document.querySelectorAll('.tp').forEach(p=>p.classList.toggle('on',p.id==='tp-'+name));
+}
+
+document.getElementById('btn-add-pt').addEventListener('click', addManualPt);
+document.getElementById('in-lon').addEventListener('keydown', e=>{ if(e.key==='Enter') addManualPt(); });
+
+function addManualPt() {
+    const la = parseFloat(document.getElementById('in-lat').value);
+    const lo = parseFloat(document.getElementById('in-lon').value);
+    if (isNaN(la)||isNaN(lo)) { toast('INVALID COORDINATES'); return; }
+    if (la<-90||la>90||lo<-180||lo>180) { toast('OUT OF RANGE'); return; }
+    pts.push([la,lo]); ptData.push(null);
+    renderMap();
+    map.setView([la,lo], Math.max(map.getZoom(),8));
+    document.getElementById('in-lat').value='';
+    document.getElementById('in-lon').value='';
+    switchTab('points');
+    toast(`POINT ${pts.length} ADDED`);
+}
+
+function dlText(text, fname) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text],{type:'text/plain'}));
+    a.download = fname;
+    a.click();
+    toast('DOWNLOADING: ' + fname);
+}
+
+function toast(msg) {
+    const el = document.getElementById('notif');
+    el.textContent = '▸ ' + msg;
+    el.classList.add('on');
+    clearTimeout(el._t);
+    el._t = setTimeout(()=>el.classList.remove('on'), 2600);
+}
+
+function loadFromJSON(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+        let data;
+        try { data = JSON.parse(e.target.result); }
+        catch(err) { toast('INVALID JSON FILE'); return; }
+
+        if (!data.legs || !Array.isArray(data.legs) || data.legs.length === 0) {
+            toast('NO LEGS FOUND IN JSON');
+            return;
+        }
+
+        pts = [];
+        ptData = [];
+
+        const legs = data.legs;
+        const cl = data.closure && data.closure.valid;
+
+        legs.forEach(leg => {
+            if (!leg.point) return;
+            pts.push([leg.point[0], leg.point[1]]);
+            ptData.push(leg.nominatim || null);
+        });
+
+        if (cl && pts.length >= 3) {
+            const f = pts[0], l = pts[pts.length-1];
+            const alreadyClosed = Math.abs(f[0]-l[0]) < 0.00001 && Math.abs(f[1]-l[1]) < 0.00001;
+            if (!alreadyClosed) pts.push([...pts[0]]);
+        }
+
+        if (data.bordmet_code) document.getElementById('ta-bordmet').value = data.bordmet_code;
+        if (data.human_prose)  document.getElementById('ta-prose').value  = data.human_prose;
+
+        document.getElementById('ta-bjson').value = JSON.stringify(data, null, 2);
+
+        buildFullGeoJSON(legs.filter(l=>l.entity && l.entity.type !== 'FPP' || l.point), cl,
+            data.bordmet_code || '', data.human_prose || '');
+        buildOverpass();
+
+        renderMap();
+        if (pts.length > 0) {
+            map.fitBounds(L.latLngBounds(pts.map(p=>[p[0],p[1]])), {padding:[40,40]});
+        }
+
+        setStatus('JSON LOADED — ' + legs.length + ' LEGS — NO API CALLS');
+        toast('JSON LOADED — ' + pts.length + ' POINTS');
+        switchTab('bordmet');
+    };
+    reader.readAsText(file);
+}
+
+document.getElementById('btn-load-json').addEventListener('click', () => {
+    document.getElementById('in-json-file').value = '';
+    document.getElementById('in-json-file').click();
+});
+
+document.getElementById('in-json-file').addEventListener('change', function() {
+    if (this.files && this.files[0]) loadFromJSON(this.files[0]);
+});
+
+function renderSegmentHitTargets() {
+    clearSegmentMarkers();
+    if (!editing || pts.length < 2) return;
+
+    const count = isClosed() ? pts.length - 1 : pts.length - 1;
+    for (let i = 0; i < count; i++) {
+        const a = pts[i], b = pts[i + 1];
+        const midLat = (a[0] + b[0]) / 2;
+        const midLon = (a[1] + b[1]) / 2;
+
+        const icon = L.divIcon({
+            className: '',
+            html: `<div style="width:10px;height:10px;background:#00d4ff;opacity:0.5;border:1px solid #fff;border-radius:50%;cursor:copy;"></div>`,
+            iconSize: [10, 10],
+            iconAnchor: [5, 5]
+        });
+
+        const mid = L.marker([midLat, midLon], { icon, interactive: true }).addTo(map);
+        const idx = i;
+        mid.on('click', e => {
+            L.DomEvent.stopPropagation(e);
+            pts.splice(idx + 1, 0, [midLat, midLon]);
+            ptData.splice(idx + 1, 0, null);
+            renderMap();
+            toast(`NODE INSERTED AT SEGMENT ${idx + 1}`);
+        });
+
+        segmentMarkers.push(mid);
+    }
+}
+
+function loadFromGeoJSON(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+        let data;
+        try { data = JSON.parse(e.target.result); }
+        catch(err) { toast('INVALID GEOJSON FILE'); return; }
+
+        const extracted = [];
+
+        function extractCoords(geom) {
+            if (!geom) return;
+            if (geom.type === 'Point') {
+                extracted.push([geom.coordinates[1], geom.coordinates[0]]);
+            } else if (geom.type === 'LineString') {
+                geom.coordinates.forEach(c => extracted.push([c[1], c[0]]));
+            } else if (geom.type === 'Polygon') {
+                geom.coordinates[0].forEach(c => extracted.push([c[1], c[0]]));
+            } else if (geom.type === 'MultiPolygon') {
+                geom.coordinates[0][0].forEach(c => extracted.push([c[1], c[0]]));
+            } else if (geom.type === 'MultiLineString') {
+                geom.coordinates[0].forEach(c => extracted.push([c[1], c[0]]));
+            } else if (geom.type === 'GeometryCollection') {
+                geom.geometries.forEach(extractCoords);
+            }
+        }
+
+        if (data.type === 'FeatureCollection') {
+            data.features.forEach(f => extractCoords(f.geometry));
+        } else if (data.type === 'Feature') {
+            extractCoords(data.geometry);
+        } else {
+            extractCoords(data);
+        }
+
+        if (extracted.length === 0) { toast('NO COORDINATES FOUND IN GEOJSON'); return; }
+
+        pts = extracted;
+        ptData = new Array(pts.length).fill(null);
+
+        renderMap();
+        map.fitBounds(L.latLngBounds(pts.map(p => [p[0], p[1]])), { padding: [40, 40] });
+        setStatus('GEOJSON LOADED — ' + pts.length + ' POINTS');
+        toast('GEOJSON LOADED — ' + pts.length + ' POINTS');
+        switchTab('points');
+    };
+    reader.readAsText(file);
+}
+
+document.getElementById('btn-load-geojson').addEventListener('click', () => {
+    document.getElementById('in-geojson-file').value = '';
+    document.getElementById('in-geojson-file').click();
+});
+
+document.getElementById('in-geojson-file').addEventListener('change', function() {
+    if (this.files && this.files[0]) loadFromGeoJSON(this.files[0]);
+});
+
+function setStatus(msg) { document.getElementById('sb-status').textContent = msg; }
+function setLoad(on) { document.getElementById('map-loading').style.display = on ? 'block' : 'none'; }
+window.addEventListener('resize', () => map.invalidateSize());
+</script>
+</body>
+</html>

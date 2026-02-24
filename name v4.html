@@ -231,31 +231,46 @@
 				outline: none;
 			}
 			#nameEraesTable,
-			#warsTable {
+			#warsTable,
+			#placesTable,
+			#urbanisationTable {
 				display: block;
 				max-height: 260px;
 				overflow-y: hidden;
 			}
 
 			#nameEraesTable thead,
-			#warsTable thead {
+			#warsTable thead,
+			#placesTable thead,
+			#urbanisationTable thead {
 				display: table;
 				width: 100%;
 				table-layout: fixed;
 			}
 
 			#nameEraesTable tbody,
-			#warsTable tbody {
+			#warsTable tbody,
+			#placesTable tbody,
+			#urbanisationTable tbody {
 				display: block;
 				max-height: 260px;
 				overflow-y: auto;
 			}
 
 			#nameEraesTable tr,
-			#warsTable tr {
+			#warsTable tr,
+			#placesTable tr,
+			#urbanisationTable tr {
 				display: table;
 				width: 100%;
 				table-layout: fixed;
+			}
+
+			.address-history {
+				display: none;
+			}
+			#output.show-addresses .address-history {
+				display: inline;
 			}
 			*::-webkit-scrollbar {
 				width: 20px;
@@ -371,6 +386,10 @@
 						<input type="checkbox" id="stationaryInput" style="width: 20px; height: 20px" />
 						<label for="stationaryInput">LOCALITY</label>
 					</div>
+					<div style="display: flex; flex-wrap: nowrap; flex-direction: row; align-content: flex-start; justify-content: center; align-items: center">
+						<input type="checkbox" id="showAddressChanges" style="width: 20px; height: 20px" />
+						<label for="showAddressChanges">SHOW ADRESS CHANGES</label>
+					</div>
 				</div>
 			</div>
 			<br />
@@ -405,12 +424,38 @@
 				</div>
 			</div>
 			<br />
+			<div style="display: flex; flex-wrap: wrap; gap: 40px">
+				<div style="flex: 1; min-width: 400px">
+					<table class="family-tree-table" style="table-layout: fixed">
+						<tr>
+							<th style="width: 15%">ID</th>
+							<th style="width: 20%">TYPE</th>
+							<th>FILE</th>
+							<th style="width: 15%">START</th>
+							<th style="width: 15%">END</th>
+						</tr>
+					</table>
+					<table id="placesTable" class="family-tree-table" style="table-layout: fixed"></table>
+				</div>
+				<div style="flex: 1; min-width: 400px">
+					<table class="family-tree-table" style="table-layout: fixed">
+						<tr>
+							<th style="width: 25%">MIGRATION (KM)</th>
+							<th style="width: 25%">URBANCALL</th>
+							<th style="width: 25%">START</th>
+							<th style="width: 25%">END</th>
+						</tr>
+					</table>
+					<table id="urbanisationTable" class="family-tree-table" style="table-layout: fixed"></table>
+				</div>
+			</div>
+			<br />
 			<div class="input-section">
 				<label for="textInput">TEXT INPUT</label>
 				<input type="text" id="textInput" />
 			</div>
 			<div class="button-container">
-				<button id="textGen" style="width: 90%">TEXT GEN</button>
+				<button id="textGen" style="width: 90%">TEXT GEN</button>	
 			</div>
 			<div class="button-container">
 				<button id="createMale">CREATE MALE</button>
@@ -447,6 +492,45 @@
 				script.onload = function () {
 					statusEl.textContent = "LOADED: " + file.toUpperCase();
 					statusEl.style.color = "#4caf50";
+					if (data && data.default_settings) {
+						PLACE_ROWS = [];
+						let promises = [];
+						
+						data.default_settings.forEach(function(ds) {
+							let type = "place_of_birth";
+							if (ds.file.startsWith("death_place")) {
+								type = "death_place";
+							}
+							const startStr = ds.start ? String(ds.start) : "";
+							const endStr = ds.end ? String(ds.end) : "";
+							
+							let rowObj = {
+								type: type,
+								fileName: ds.file + ".json",
+								start: startStr,
+								end: endStr,
+								data: []
+							};
+							PLACE_ROWS.push(rowObj);
+
+							let p = fetch(rowObj.fileName)
+								.then(res => {
+									if (!res.ok) throw new Error("Network response was not ok");
+									return res.json();
+								})
+								.then(json => {
+									rowObj.data = json;
+								})
+								.catch(err => {
+									console.warn("Could not auto-load: " + rowObj.fileName);
+								});
+							promises.push(p);
+						});
+						
+						Promise.allSettled(promises).then(() => {
+							initializePlacesTable();
+						});
+					}
 				};
 				script.onerror = function () {
 					statusEl.textContent = "ERROR LOADING: " + file;
@@ -484,6 +568,47 @@
 				const adjAge = calculateDetailedAge(birthDate, endDate, m);
 
 				return `<span class="entry-age">${rawAge}<br/>${adjAge}</span>`;
+			}
+
+			function normalizePlaceName(name) {
+				if (!name) return "";
+				return name.toUpperCase()
+					.replace(/[のノ乃]/g, "ノ")
+					.replace(/[ヶケがガ]/g, "ケ")
+					.replace(/[ッツ]/g, "ツ");
+			}
+
+			function resolveCoordsForPlace(placeName, anchorCoords = null) {
+				if (!placeName) return null;
+				const searchName = normalizePlaceName(placeName);
+				let matches = [];
+				
+				// Search through all loaded data in PLACE_ROWS
+				for (const row of PLACE_ROWS) {
+					if (row.data) {
+						for (const p of row.data) {
+							const pNorm = normalizePlaceName(p.name);
+							if (p.name && (searchName.includes(pNorm) || pNorm.includes(searchName))) {
+								if (anchorCoords) {
+									const d = haversineDistance(anchorCoords[0], anchorCoords[1], p.coordinates[0], p.coordinates[1]);
+									matches.push({ coords: p.coordinates, dist: d });
+								} else {
+									// If no anchor, look for an exact name match first
+									if (pNorm === searchName) return p.coordinates;
+									matches.push({ coords: p.coordinates, dist: 999999 });
+								}
+							}
+						}
+					}
+				}
+
+				if (matches.length > 0) {
+					if (anchorCoords) {
+						matches.sort((a, b) => a.dist - b.dist);
+					}
+					return matches[0].coords;
+				}
+				return null;
 			}
 
 			function applyHistoricalPlaceName(rawPlaceName, birthDate) {
@@ -555,7 +680,16 @@
 					const personBirth = parseDate(person.birthDate);
 					const motherAge = getMotherAgeAtBirth();
 					const motherBirthYear = personBirth.year - motherAge;
-					const mother = createPerson(0, generateRandomDateInYear(motherBirthYear), getRandomBirthplace(), person.familyName);
+					const motherBD = generateRandomDateInYear(motherBirthYear);
+					
+					// Resolve person's coordinates if missing to avoid teleporting ancestors
+					if (!person.birthCoords && person.birthPlace) {
+						person.birthCoords = resolveCoordsForPlace(person.birthPlace, null);
+					}
+
+					const mPl = pickPlace("place_of_birth", motherBD, person.birthCoords);
+					const mother = createPerson(0, motherBD, mPl.name, person.familyName, mPl.coordinates, mPl.fullAddress);
+					mother.birthCoords = mPl.coordinates; // Explicitly ensure propagation
 					mother.givenNames = person.motherName;
 					person.mother = mother;
 
@@ -563,7 +697,10 @@
 					let fatherBirthYear = motherBirthYear + fatherAgeDiff;
 					const maxFatherBirthYear = personBirth.year - Math.round(16 * m);
 					if (fatherBirthYear > maxFatherBirthYear) fatherBirthYear = maxFatherBirthYear;
-					const father = createPerson(1, generateRandomDateInYear(fatherBirthYear), getRandomBirthplace(), weightedRandomChoice(data.family_names));
+					const fatherBD = generateRandomDateInYear(fatherBirthYear);
+					const fPl = pickPlace("place_of_birth", fatherBD, person.birthCoords);
+					const father = createPerson(1, fatherBD, fPl.name, weightedRandomChoice(data.family_names), fPl.coordinates, fPl.fullAddress);
+					father.birthCoords = fPl.coordinates;
 					father.familyName = person.familyName;
 					father.givenNames = person.fatherName;
 					person.father = father;
@@ -639,6 +776,8 @@
 					});
 				}
 
+				simulateMigration(self, referenceDate);
+
 				const mother = self.mother;
 				const father = self.father;
 
@@ -704,7 +843,8 @@
 				const birthDate = mainMatch[4].trim();
 				const gender = detectGender(givenNames);
 
-				const person = createPerson(gender, birthDate, birthPlace, familyName);
+				const coords = resolveCoordsForPlace(birthPlace);
+				const person = createPerson(gender, birthDate, birthPlace, familyName, coords, birthPlace);
 				person.givenNames = givenNames;
 				const metadataIndex = input.search(/,(?:\s|\u00A0)*(?:parents|spouse|ex-spouse|children)[\s\u00A0]*:/i);
 				const headerText = metadataIndex !== -1 ? input.substring(0, metadataIndex) : input;
@@ -929,6 +1069,8 @@
 					settings: currentSettings,
 					nameEraes: readNameEraesFromTable(),
 					wars: readWarsFromTable(),
+					places: readPlacesFromTable(),
+					urbanisation: readUrbanisationFromTable(),
 					tables: [],
 					rawEntries: [],
 				};
@@ -992,6 +1134,16 @@
 					if (imported.wars && imported.wars.length > 0) {
 						WAR_PERIODS = imported.wars;
 						initializeWarsTable();
+					}
+
+					if (imported.places) {
+						PLACE_ROWS = imported.places;
+						initializePlacesTable();
+					}
+
+					if (imported.urbanisation) {
+						URBANISATION = imported.urbanisation;
+						initializeUrbanisationTable();
 					}
 
 					const formattedRefDate = formatDate(parseInt(document.getElementById("birthDate").value.substring(0, 4)), parseInt(document.getElementById("birthDate").value.substring(4, 6)), parseInt(document.getElementById("birthDate").value.substring(6, 8)));
@@ -1222,6 +1374,170 @@
 				{ lastYear: 1908, lastMonth: 1, lastDay: 1, namen: "DEUTSCHES BUNDESLEIN" },
 			];
 
+			let PLACE_ROWS = [];
+
+			let URBANISATION = [
+				{ migration: 30,  urbancall: 0.05,  start: "",         end: "17000101" },
+				{ migration: 50,  urbancall: 0.10,  start: "17000101", end: "18000101" },
+				{ migration: 100, urbancall: 0.20,  start: "18000101", end: "18500101" },
+				{ migration: 200, urbancall: 0.35,  start: "18500101", end: "19000101" },
+				{ migration: 500, urbancall: 0.55,  start: "19000101", end: "19500101" },
+				{ migration: 999, urbancall: 0.75,  start: "19500101", end: ""         },
+			];
+
+			function recalculatePlaceIds() {
+				const table = document.getElementById("placesTable");
+				let counts = { place_of_birth: 0, death_place: 0 };
+				for (let i = 1; i < table.rows.length; i++) {
+					const row = table.rows[i];
+					const select = row.querySelector("select");
+					if (!select) continue;
+					const type = select.value;
+					counts[type]++;
+					const span = row.querySelector(".place-id");
+					if (span) span.textContent = counts[type];
+				}
+			}
+
+			function handlePlaceFileUpload(inputElement) {
+				const file = inputElement.files[0];
+				if (!file) return;
+				const row = inputElement.closest("tr");
+				const btn = row.querySelector("button");
+
+				const reader = new FileReader();
+				reader.onload = function(e) {
+					try {
+						const json = JSON.parse(e.target.result);
+						row._placeData = json;
+						row._fileName = file.name;
+						btn.textContent = file.name;
+						btn.style.color = "#4caf50";
+					} catch(err) {
+						btn.textContent = "ERROR";
+						btn.style.color = "#e91e63";
+					}
+				};
+				reader.readAsText(file);
+			}
+
+			function initializePlacesTable() {
+				const table = document.getElementById("placesTable");
+				while (table.rows.length > 1) table.deleteRow(1);
+				PLACE_ROWS.forEach((place) => {
+					addPlacesRow(place);
+				});
+				if(PLACE_ROWS.length === 0) {
+					addPlacesRow();
+				}
+				recalculatePlaceIds();
+			}
+
+			function addPlacesRow(placeData = null) {
+				const table = document.getElementById("placesTable");
+				const row = table.insertRow();
+				const type = placeData ? placeData.type : "place_of_birth";
+				const fileText = placeData && placeData.fileName ? placeData.fileName : "LOAD JSON";
+				const start = placeData ? placeData.start : "";
+				const end = placeData ? placeData.end : "";
+				
+				if (placeData && placeData.data) {
+					row._placeData = placeData.data;
+					row._fileName = placeData.fileName;
+				}
+
+				row.innerHTML = `
+					<td><span class="place-id" style="display:inline-block;width:100%;text-align:center;font-weight:bold;"></span></td>
+					<td>
+						<select onchange="recalculatePlaceIds()" style="width:100%;">
+							<option value="place_of_birth" ${type === "place_of_birth" ? "selected" : ""}>place_of_birth</option>
+							<option value="death_place" ${type === "death_place" ? "selected" : ""}>death_place</option>
+						</select>
+					</td>
+					<td>
+						<input type="file" style="display:none;" accept=".json" onchange="handlePlaceFileUpload(this)">
+						<button style="width:100%;padding:2px;font-size:12px;" onclick="this.previousElementSibling.click()">${fileText}</button>
+					</td>
+					<td><input type="text" value="${start}" maxlength="8"></td>
+					<td><input type="text" value="${end}" maxlength="8"></td>
+				`;
+				if (placeData && placeData.data) {
+					row.querySelector("button").style.color = "#4caf50";
+				}
+				recalculatePlaceIds();
+			}
+
+			function readPlacesFromTable() {
+				const table = document.getElementById("placesTable");
+				const result = [];
+				for (let i = 1; i < table.rows.length; i++) {
+					const row = table.rows[i];
+					const id = row.querySelector(".place-id").textContent;
+					const type = row.querySelector("select").value;
+					const inputs = row.querySelectorAll("input[type='text']");
+					const start = inputs[0].value || "";
+					const end = inputs[1].value || "";
+					const data = row._placeData || [];
+					const fileName = row._fileName || "";
+					
+					if (data.length > 0) {
+						result.push({
+							id: parseInt(id),
+							type: type,
+							fileName: fileName,
+							start: start,
+							end: end,
+							data: data
+						});
+					}
+				}
+				PLACE_ROWS = result;
+				return result;
+			}
+
+			function initializeUrbanisationTable() {
+				const table = document.getElementById("urbanisationTable");
+				while (table.rows.length > 1) table.deleteRow(1);
+				URBANISATION.forEach((urb) => {
+					addUrbanisationRow(urb);
+				});
+				if(URBANISATION.length === 0) {
+					addUrbanisationRow({ migration: 0, urbancall: 0.1, start: "", end: "" });
+				}
+			}
+
+			function addUrbanisationRow(urbData = null) {
+				const table = document.getElementById("urbanisationTable");
+				const row = table.insertRow();
+				const migration = urbData ? urbData.migration : 0;
+				const urbancall = urbData ? urbData.urbancall : 0.1;
+				const start = urbData ? urbData.start : "";
+				const end = urbData ? urbData.end : "";
+				
+				row.innerHTML = `
+					<td><input type="number" value="${migration}"></td>
+					<td><input type="number" step="0.001" value="${urbancall}" min="0" max="1"></td>
+					<td><input type="text" value="${start}" maxlength="8"></td>
+					<td><input type="text" value="${end}" maxlength="8"></td>
+				`;
+			}
+
+			function readUrbanisationFromTable() {
+				const table = document.getElementById("urbanisationTable");
+				const result = [];
+				for (let i = 1; i < table.rows.length; i++) {
+					const inputs = table.rows[i].querySelectorAll("input");
+					result.push({
+						migration: parseInt(inputs[0].value) || 0,
+						urbancall: parseFloat(inputs[1].value) || 0,
+						start: inputs[2].value || "",
+						end: inputs[3].value || "",
+					});
+				}
+				URBANISATION = result;
+				return result;
+			}
+
 			function initializeNameEraesTable() {
 				const table = document.getElementById("nameEraesTable");
 				while (table.rows.length > 1) table.deleteRow(1);
@@ -1285,28 +1601,35 @@
 					const active = document.activeElement;
 					const nameEraesTable = document.getElementById("nameEraesTable");
 					const warsTable = document.getElementById("warsTable");
+					const placesTable = document.getElementById("placesTable");
+					const urbanisationTable = document.getElementById("urbanisationTable");
 					if (nameEraesTable.contains(active)) {
 						e.preventDefault();
 						addNameEraesRow();
 					} else if (warsTable.contains(active)) {
 						e.preventDefault();
 						addWarsRow();
+					} else if (placesTable.contains(active)) {
+						e.preventDefault();
+						addPlacesRow();
+					} else if (urbanisationTable.contains(active)) {
+						e.preventDefault();
+						addUrbanisationRow();
 					}
 				} else if (e.key === "Delete") {
 					const active = document.activeElement;
-					const nameEraesTable = document.getElementById("nameEraesTable");
-					const warsTable = document.getElementById("warsTable");
-					if (nameEraesTable.contains(active)) {
-						const row = active.closest("tr");
-						if (row && row.rowIndex > 0) {
-							e.preventDefault();
-							row.remove();
-						}
-					} else if (warsTable.contains(active)) {
-						const row = active.closest("tr");
-						if (row && row.rowIndex > 0) {
-							e.preventDefault();
-							row.remove();
+					const tables = ["nameEraesTable", "warsTable", "placesTable", "urbanisationTable"];
+					
+					for(let id of tables) {
+						let table = document.getElementById(id);
+						if (table.contains(active)) {
+							const row = active.closest("tr");
+							if (row && row.rowIndex > 0) {
+								e.preventDefault();
+								row.remove();
+								if(id === "placesTable") recalculatePlaceIds();
+							}
+							break;
 						}
 					}
 				}
@@ -1315,6 +1638,16 @@
 			document.addEventListener("DOMContentLoaded", function () {
 				initializeNameEraesTable();
 				initializeWarsTable();
+				initializePlacesTable();
+				initializeUrbanisationTable();
+				
+				document.getElementById("showAddressChanges").addEventListener("change", function() {
+					if(this.checked) {
+						document.getElementById("output").classList.add("show-addresses");
+					} else {
+						document.getElementById("output").classList.remove("show-addresses");
+					}
+				});
 			});
 
 			const MIN_MOTHER_AGE = 18;
@@ -1373,16 +1706,268 @@
 				}
 				return array[array.length - 1].name || array[array.length - 1];
 			}
-
-			function weightedPlaceOfBirth(germanCities, nonGermanCities, germanProbability = 0.9923) {
-				if (Math.random() < germanProbability) {
-					return weightedRandomChoice(germanCities);
-				} else {
-					return weightedRandomChoice(nonGermanCities);
-				}
+			function formatAddressList(items) {
+				if(items.length === 0) return "";
+				if(items.length === 1) return " — " + items[0];
+				if(items.length === 2) return " — " + items[0] + " & " + items[1];
+				return " — " + items.slice(0, -1).join(" , ") + " , & " + items[items.length - 1];
 			}
-			function getRandomBirthplace() {
-				return weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+
+			function haversineDistance(lat1, lon1, lat2, lon2) {
+				const R = 6371; // km
+				const dLat = (lat2 - lat1) * Math.PI / 180;
+				const dLon = (lon2 - lon1) * Math.PI / 180;
+				const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
+				return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+			}
+
+			function buildFullAddress(coords, pool, militaryLevelOnly = false) {
+				if(!coords || !pool || pool.length === 0) return "";
+				let bestForRank = {};
+				
+				for(const place of pool) {
+					if(!place.coordinates || !place.rank) continue;
+					const dist = haversineDistance(coords[0], coords[1], place.coordinates[0], place.coordinates[1]);
+					if(!bestForRank[place.rank] || dist < bestForRank[place.rank].dist) {
+						bestForRank[place.rank] = { place: place.name, dist: dist };
+					}
+				}
+				
+				let ranksToUse = militaryLevelOnly ? [1, 2] : [7, 6, 5, 4, 3, 2, 1];
+				let parts = [];
+				
+				// Maximum allowable distance (in km) to associate a place of a given rank
+				// This prevents pulling in regions from hundreds of kilometers away just because they are the "closest" in the dataset.
+				const maxDistForRank = {
+					7: 15,
+					6: 30,
+					5: 60,
+					4: 90,
+					3: 130,
+					2: 180,
+					1: 300
+				};
+
+				for(const r of ranksToUse) {
+					if(bestForRank[r] && bestForRank[r].dist <= (maxDistForRank[r] || 500)) {
+						if (parts.length === 0 || parts[parts.length - 1] !== bestForRank[r].place) {
+							parts.push(bestForRank[r].place);
+						}
+					}
+				}
+				
+				parts = [...new Set(parts)];
+				
+				return parts.join(" ").toUpperCase();
+			}
+			function getParentCityPlace(coords, pool) {
+				if (!coords || !pool || pool.length === 0) return null;
+				let bestForRank = {};
+				
+				for(const place of pool) {
+					if(!place.coordinates || !place.rank) continue;
+					const dist = haversineDistance(coords[0], coords[1], place.coordinates[0], place.coordinates[1]);
+					if(!bestForRank[place.rank] || dist < bestForRank[place.rank].dist) {
+						bestForRank[place.rank] = { place: place.name, coords: place.coordinates, dist: dist };
+					}
+				}
+				
+				const maxDistForRank = {
+					7: 15,
+					6: 30,
+					5: 60,
+					4: 90,
+					3: 130,
+					2: 180,
+					1: 300
+				};
+
+				for (const r of [3, 4, 5, 6, 7]) {
+					if (bestForRank[r] && bestForRank[r].dist <= (maxDistForRank[r] || 500)) {
+						return { name: bestForRank[r].place, coordinates: bestForRank[r].coords, rank: r };
+					}
+				}
+				
+				return null;
+			}
+
+			function pickPlace(type, dateStr, anchorCoords = null) {
+				let candidates = [];
+				const dateVal = parseInt(dateStr.replace(/[^0-9]/g, "").substring(0, 8)) || 0;
+				
+				for(const row of PLACE_ROWS) {
+					if(row.type === type) {
+						const start = row.start ? parseInt(row.start) : 0;
+						const end = row.end ? parseInt(row.end) : 99999999;
+						if (dateVal >= start && dateVal <= end && row.data) {
+							candidates = candidates.concat(row.data);
+						}
+					}
+				}
+
+				const anchorFallback = document.getElementById("anchorPlaceInput").value || "UNBEKANNT";
+				if(candidates.length === 0) {
+					// Fallback to ANY data for this type regardless of era
+					for(const row of PLACE_ROWS) {
+						if(row.type === type && row.data) candidates = candidates.concat(row.data);
+					}
+				}
+				
+				if(candidates.length === 0) {
+					return { name: anchorFallback, coordinates: anchorCoords || null, rank: null, fullAddress: anchorFallback };
+				}
+
+				const refYear = parseInt(document.getElementById("birthDate").value.substring(0, 4)) || 1935;
+				const techYear = parseInt(document.getElementById("technologyYearInput").value) || refYear;
+				const calendarYear = Math.floor(dateVal / 10000);
+				const techDateVal = ((calendarYear - refYear) + techYear) * 10000 + 101; 
+				
+				let urb = URBANISATION[0] || { migration: 0, urbancall: 0.1 };
+				for(const u of URBANISATION) {
+					const start = u.start ? parseInt(u.start) : 0;
+					const end = u.end ? parseInt(u.end) : 99999999;
+					if(techDateVal >= start && techDateVal <= end) {
+						urb = u;
+						break;
+					}
+				}
+
+				const migration = urb.migration;
+				const urbancall = urb.urbancall;
+
+				if(anchorCoords) {
+					// 1. Calculate distance for all candidates exactly ONCE
+					candidates.forEach(p => {
+						if (p.coordinates) {
+							p._dist = haversineDistance(anchorCoords[0], anchorCoords[1], p.coordinates[0], p.coordinates[1]);
+						} else {
+							p._dist = Infinity;
+						}
+					});
+
+					// 2. Filter strictly by the historical limit
+					let filtered = candidates.filter(p => p._dist <= migration);
+
+					// 3. THE FIX: If the strict limit is empty, do NOT teleport to a distant location.
+					// We will synthesize a placeholder at the anchor location to keep genealogy focused.
+					if (filtered.length === 0) {
+						let typePool = [];
+						const dateValInt = parseInt(dateStr.replace(/[^0-9]/g, "").substring(0, 8)) || 0;
+						for(const row of PLACE_ROWS) {
+							if(row.type === type && row.data) {
+								const start = row.start ? parseInt(row.start) : 0;
+								const end = row.end ? parseInt(row.end) : 99999999;
+								if (dateValInt >= start && dateValInt <= end) {
+									typePool = typePool.concat(row.data);
+								}
+							}
+						}
+						if(typePool.length === 0) {
+							for(const row of PLACE_ROWS) { if(row.type === type && row.data) typePool = typePool.concat(row.data); }
+						}
+						
+						// THE STAY-PUT CLAMP:
+						// Sort by distance and check if the NEAREST neighbor is too far.
+						candidates.sort((a, b) => a._dist - b._dist);
+						
+						if (candidates[0]._dist > 50) {
+							// If the nearest town is > 50km away, it is a data gap wormhole.
+							// FORCE the current location to stay put.
+							const addr = buildFullAddress(anchorCoords, typePool, false);
+							let anchorName = addr ? addr.split(" ")[0] : anchorFallback;
+
+							const exactMatch = candidates.find(p => p._dist < 1.0);
+							if (exactMatch) anchorName = exactMatch.name;
+
+							return {
+								name: anchorName,
+								coordinates: anchorCoords,
+								rank: null,
+								fullAddress: addr || anchorFallback
+							};
+						} else {
+							// Within 50km, we take the top 5 closest (historical neighbors)
+							candidates = candidates.slice(0, 5).filter(p => p._dist !== Infinity);
+						}
+					} else {
+						candidates = filtered;
+					}
+				}
+
+				const isUrban = Math.random() < urbancall;
+				// Urban: prioritizes Quarters (6), Neighbourhoods (7), and Towns (4)
+				const urbanWeights = {1:0.1, 2:0.2, 3:0.6, 4:1.5, 5:0.3, 6:1.8, 7:2.0};
+				// Rural: prioritizes Villages (5)
+				const ruralWeights = {1:0.01, 2:0.05, 3:0.1, 4:0.5, 5:2.0, 6:0.4, 7:0.2};
+				const weights = isUrban ? urbanWeights : ruralWeights;
+
+				let totalWeight = 0;
+				for(const c of candidates) {
+					let w = weights[c.rank || 5] || 0.1;
+					// Boost if it's the 'self' (same as anchorCoords) or immediate vicinity
+					if (c._dist === 0) w *= 2.0; 
+					else if (c._dist < 1) w *= 1.5;
+
+					c._computedWeight = w;
+					totalWeight += w;
+				}
+
+				let rand = Math.random() * totalWeight;
+				let selected = candidates[candidates.length - 1];
+				for(const c of candidates) {
+					rand -= c._computedWeight;
+					if(rand <= 0) {
+						selected = c;
+						break;
+					}
+				}
+				
+				let typePool = [];
+				const dateValInt = parseInt(dateStr.replace(/[^0-9]/g, "").substring(0, 8)) || 0;
+				for(const row of PLACE_ROWS) {
+					if(row.type === type && row.data) {
+						const start = row.start ? parseInt(row.start) : 0;
+						const end = row.end ? parseInt(row.end) : 99999999;
+						if (dateValInt >= start && dateValInt <= end) {
+							typePool = typePool.concat(row.data);
+						}
+					}
+				}
+				if (typePool.length === 0) {
+					for(const row of PLACE_ROWS) {
+						if(row.type === type && row.data) typePool = typePool.concat(row.data);
+					}
+				}
+
+				if (anchorCoords && selected.coordinates) {
+					const finalDistance = haversineDistance(anchorCoords[0], anchorCoords[1], selected.coordinates[0], selected.coordinates[1]);
+					if (finalDistance > 100) {
+						// FINAL SANITY CLAMP: If the selected place is > 100km away, it's a name collision/wormhole.
+						// Abort and stay at anchor.
+						const addr = buildFullAddress(anchorCoords, typePool, false);
+						let anchorName = addr ? addr.split(" ")[0] : anchorFallback;
+						
+						for (const row of PLACE_ROWS) {
+							if (row.data) {
+								const match = row.data.find(p => p.coordinates && haversineDistance(anchorCoords[0], anchorCoords[1], p.coordinates[0], p.coordinates[1]) < 0.5);
+								if (match) { anchorName = match.name; break; }
+							}
+						}
+						return {
+							name: anchorName,
+							coordinates: anchorCoords,
+							rank: null,
+							fullAddress: addr || anchorFallback
+						};
+					}
+				}
+
+				return {
+					name: selected.name,
+					coordinates: selected.coordinates,
+					rank: selected.rank,
+					fullAddress: buildFullAddress(selected.coordinates, typePool, false) || selected.name
+				};
 			}
 
 			function getRandomFamilyName() {
@@ -1696,7 +2281,7 @@
 								return {
 									died: true,
 									deathDate: potentialDeathDate,
-									deathPlace: weightedRandomChoice(data.places_of_birth),
+									deathPlace: pickPlace("death_place", potentialDeathDate, null).name,
 									inMilitary: true,
 								};
 							}
@@ -1840,10 +2425,18 @@
 							continue;
 						}
 
+						const ptPick = pickPlace("death_place", deathDate, null);
+						let ptDeathAddr = ptPick.name;
+						if (ptPick.coordinates) {
+							let pool = [];
+							for(const row of PLACE_ROWS) { if(row.type === "death_place" && row.data) pool = pool.concat(row.data); }
+							const milAddr = buildFullAddress(ptPick.coordinates, pool, true);
+							if (milAddr) ptDeathAddr = milAddr;
+						}
 						return {
 							died: true,
 							deathDate: deathDate,
-							deathPlace: weightedRandomChoice(data.places_of_birth),
+							deathPlace: ptDeathAddr,
 							inMilitary: true,
 						};
 					}
@@ -1937,11 +2530,13 @@
 				}
 			}
 
-			function createPerson(gender, birthDate, birthPlace, familyName) {
+			function createPerson(gender, birthDate, birthPlace, familyName, birthCoords = null, fullAddress = "") {
 				return {
 					gender: gender,
 					birthDate: birthDate,
 					birthPlace: birthPlace,
+					birthCoords: birthCoords,
+					addressHistory: fullAddress ? [{date: (birthDate || "").replace(/[^0-9]/g, "").substring(0,8), address: fullAddress}] : [],
 					familyName: familyName,
 					birthFamilyName: familyName,
 					givenNames: null,
@@ -2002,10 +2597,10 @@
 				const exSpouseAge = random(Math.round(18 * m), Math.round(35 * m));
 				const exSpouseBirthYear = firstExChildDate.year - exSpouseAge;
 				const exSpouseBirthDate = generateRandomDateInYear(exSpouseBirthYear);
-				const exSpouseBirthPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+				const exPlace = pickPlace("place_of_birth", exSpouseBirthDate, person.birthCoords);
+				const exSpouseBirthPlace = exPlace.name;
 				const exSpouseBirthFamilyName = weightedRandomChoice(data.family_names);
-
-				const exSpouse = createPerson(exSpouseGender, exSpouseBirthDate, exSpouseBirthPlace, exSpouseBirthFamilyName);
+				const exSpouse = createPerson(exSpouseGender, exSpouseBirthDate, exSpouseBirthPlace, exSpouseBirthFamilyName, exPlace.coordinates, exPlace.fullAddress);
 				exSpouse.birthFamilyName = exSpouseBirthFamilyName;
 
 				generateGivenNamesForPerson(exSpouse, []);
@@ -2033,10 +2628,10 @@
 						const newSpouseAge = calculateAge(exSpouseBirthDate, formatDate(remarriageYear, 6, 15)) + random(-5, 5);
 						const newSpouseBirthYear = remarriageYear - Math.max(Math.round(18 * m), newSpouseAge);
 						const newSpouseBirthDate = generateRandomDateInYear(newSpouseBirthYear);
-						const newSpouseBirthPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+						const newExPlace = pickPlace("place_of_birth", newSpouseBirthDate, exSpouse.birthCoords);
+						const newSpouseBirthPlace = newExPlace.name;
 						const newSpouseBirthFamilyName = weightedRandomChoice(data.family_names);
-
-						exSpouseNewSpouse = createPerson(newSpouseGender, newSpouseBirthDate, newSpouseBirthPlace, newSpouseBirthFamilyName);
+						exSpouseNewSpouse = createPerson(newSpouseGender, newSpouseBirthDate, newSpouseBirthPlace, newSpouseBirthFamilyName, newExPlace.coordinates, newExPlace.fullAddress);
 						exSpouseNewSpouse.birthFamilyName = newSpouseBirthFamilyName;
 						generateGivenNamesForPerson(exSpouseNewSpouse, []);
 
@@ -2174,7 +2769,8 @@
 				const refDate = parseDate(referenceDate);
 				const spouseBirthYear = refDate.year - spouseAge;
 				const spouseBirthDate = generateRandomDateInYear(spouseBirthYear);
-				const spouse = createPerson(spouseGender, spouseBirthDate, weightedPlaceOfBirth(data.places_of_birth, []), weightedRandomChoice(data.family_names));
+				const spousePlace = pickPlace("place_of_birth", spouseBirthDate, sibling.birthCoords);
+				const spouse = createPerson(spouseGender, spouseBirthDate, spousePlace.name, weightedRandomChoice(data.family_names), spousePlace.coordinates, spousePlace.fullAddress);
 				generateGivenNamesForPerson(spouse, []);
 
 				sibling.spouse = spouse;
@@ -2274,25 +2870,61 @@
 					if (!success) continue;
 					const childGender = Math.random() < 0.5 ? 1 : 0;
 					let childPlace;
+					let childCoords = null;
+					let childFullAddress = "";
+
 					if (previousPlace && Math.random() < 0.9) {
 						childPlace = previousPlace;
+						if (childPlace === "INTER-NATIONAL" || isForeignPlace(childPlace)) {
+							childPlace = "INTER-NATIONAL";
+							childFullAddress = "INTER-NATIONAL";
+							childCoords = null;
+						}
 					} else {
 						if (inForeignTerritory) {
 							if (Math.random() < 0.9) {
-								childPlace = data.international_places[Math.floor(Math.random() * data.international_places.length)];
+								childPlace = "INTER-NATIONAL";
+								childFullAddress = "INTER-NATIONAL";
+								childCoords = null;
 							} else {
-								childPlace = weightedPlaceOfBirth(data.places_of_birth, []);
+								const fallbackObj = pickPlace("place_of_birth", childBirthDate, null);
+								childPlace = fallbackObj.name;
+								childCoords = fallbackObj.coordinates;
+								childFullAddress = fallbackObj.fullAddress || childPlace;
 								inForeignTerritory = false;
 							}
-						} else if (Math.random() < 0.3) {
-							childPlace = Math.random() < 0.5 ? sibMother.birthPlace : sibFather.birthPlace;
 						} else {
-							childPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
-							if (isForeignPlace(childPlace)) inForeignTerritory = true;
+							let parentCoords = Math.random() < 0.5 ? sibMother.birthCoords : sibFather.birthCoords;
+							if (!parentCoords) parentCoords = sibMother.birthCoords || sibFather.birthCoords;
+							
+							let typePool = [];
+							for(const row of PLACE_ROWS) {
+								if(row.type === "place_of_birth" && row.data) typePool = typePool.concat(row.data);
+							}
+							
+							let cityPlace = getParentCityPlace(parentCoords, typePool);
+							if (cityPlace) {
+								childPlace = cityPlace.name;
+								childCoords = cityPlace.coordinates;
+								childFullAddress = buildFullAddress(childCoords, typePool, false) || childPlace;
+							} else {
+								const cpObj = pickPlace("place_of_birth", childBirthDate, parentCoords);
+								childPlace = cpObj.name;
+								childCoords = cpObj.coordinates;
+								childFullAddress = cpObj.fullAddress || childPlace;
+							}
+							
+							if (isForeignPlace(childPlace)) {
+								inForeignTerritory = true;
+								childPlace = "INTER-NATIONAL";
+								childFullAddress = "INTER-NATIONAL";
+								childCoords = null;
+							}
 						}
 					}
 					previousPlace = childPlace;
-					const child = createPerson(childGender, childBirthDate, childPlace, familyName);
+					
+					const child = createPerson(childGender, childBirthDate, childPlace, familyName, childCoords, childFullAddress);
 
 					// 3. ASSIGN PARENTS FIRST (Needed for death location logic)
 					child.mother = sibMother;
@@ -2334,10 +2966,10 @@
 				const refDate = parseDate(referenceDate);
 				const spouseBirthYear = refDate.year - spouseAge;
 				const spouseBirthDate = generateRandomDateInYear(spouseBirthYear);
-				const spouseBirthPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+				const spousePlace = pickPlace("place_of_birth", spouseBirthDate, self.birthCoords);
+				const spouseBirthPlace = spousePlace.name;
 				const spouseBirthFamilyName = weightedRandomChoice(data.family_names);
-
-				const spouse = createPerson(spouseGender, spouseBirthDate, spouseBirthPlace, spouseBirthFamilyName);
+				const spouse = createPerson(spouseGender, spouseBirthDate, spouseBirthPlace, spouseBirthFamilyName, spousePlace.coordinates, spousePlace.fullAddress);
 				generateGivenNamesForPerson(spouse, grandparents);
 
 				self.spouse = spouse;
@@ -2425,25 +3057,61 @@
 					if (!success) continue;
 					const childGender = Math.random() < 0.5 ? 1 : 0;
 					let childPlace;
+					let childCoords = null;
+					let childFullAddress = "";
+
 					if (previousChildPlace && Math.random() < 0.9) {
 						childPlace = previousChildPlace;
+						if (childPlace === "INTER-NATIONAL" || isForeignPlace(childPlace)) {
+							childPlace = "INTER-NATIONAL";
+							childFullAddress = "INTER-NATIONAL";
+							childCoords = null;
+						}
 					} else {
 						if (inForeignTerritory) {
 							if (Math.random() < 0.9) {
-								childPlace = data.international_places[Math.floor(Math.random() * data.international_places.length)];
+								childPlace = "INTER-NATIONAL";
+								childFullAddress = "INTER-NATIONAL";
+								childCoords = null;
 							} else {
-								childPlace = weightedPlaceOfBirth(data.places_of_birth, []);
+								const fallbackObj = pickPlace("place_of_birth", childBirthDate, null);
+								childPlace = fallbackObj.name;
+								childCoords = fallbackObj.coordinates;
+								childFullAddress = fallbackObj.fullAddress || childPlace;
 								inForeignTerritory = false;
 							}
-						} else if (Math.random() < 0.3) {
-							childPlace = Math.random() < 0.5 ? mother.birthPlace : father.birthPlace;
 						} else {
-							childPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
-							if (isForeignPlace(childPlace)) inForeignTerritory = true;
+							let parentCoords = Math.random() < 0.5 ? mother.birthCoords : father.birthCoords;
+							if (!parentCoords) parentCoords = mother.birthCoords || father.birthCoords;
+							
+							let typePool = [];
+							for(const row of PLACE_ROWS) {
+								if(row.type === "place_of_birth" && row.data) typePool = typePool.concat(row.data);
+							}
+							
+							let cityPlace = getParentCityPlace(parentCoords, typePool);
+							if (cityPlace) {
+								childPlace = cityPlace.name;
+								childCoords = cityPlace.coordinates;
+								childFullAddress = buildFullAddress(childCoords, typePool, false) || childPlace;
+							} else {
+								const cpObj = pickPlace("place_of_birth", childBirthDate, parentCoords);
+								childPlace = cpObj.name;
+								childCoords = cpObj.coordinates;
+								childFullAddress = cpObj.fullAddress || childPlace;
+							}
+							
+							if (isForeignPlace(childPlace)) {
+								inForeignTerritory = true;
+								childPlace = "INTER-NATIONAL";
+								childFullAddress = "INTER-NATIONAL";
+								childCoords = null;
+							}
 						}
 					}
 					previousChildPlace = childPlace;
-					const child = createPerson(childGender, childBirthDate, childPlace, familyName);
+					
+					const child = createPerson(childGender, childBirthDate, childPlace, familyName, childCoords, childFullAddress);
 					child.mother = mother;
 					child.father = father;
 					generateGivenNamesForPerson(child, grandparents, usedFirstNames);
@@ -2455,6 +3123,11 @@
 				children.sort((a, b) => compareDates(a.birthDate, b.birthDate));
 				mother.children = children;
 				father.children = children;
+
+				// Link siblings together
+				for (const child of children) {
+					child.siblings = children.filter(c => c !== child);
+				}
 				return children;
 			}
 
@@ -2482,11 +3155,10 @@
 				const refDate = parseDate(referenceDate);
 				const spouseBirthYear = refDate.year - spouseAge;
 				const spouseBirthDate = generateRandomDateInYear(spouseBirthYear);
-				const spouseBirthPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
-
+				const spousePlace = pickPlace("place_of_birth", spouseBirthDate, self.birthCoords);
+				const spouseBirthPlace = spousePlace.name;
 				const spouseBirthFamilyName = weightedRandomChoice(data.family_names);
-
-				const spouse = createPerson(spouseGender, spouseBirthDate, spouseBirthPlace, spouseBirthFamilyName);
+				const spouse = createPerson(spouseGender, spouseBirthDate, spouseBirthPlace, spouseBirthFamilyName, spousePlace.coordinates, spousePlace.fullAddress);
 				generateGivenNamesForPerson(spouse, []);
 
 				child.spouse = spouse;
@@ -2566,25 +3238,46 @@
 
 					const gcGender = Math.random() < 0.5 ? 1 : 0;
 					let gcPlace;
+					let gcCoords = null;
+					let gcFullAddress = "";
 
 					if (previousPlace && Math.random() < 0.9) {
 						gcPlace = previousPlace;
+						if (gcPlace === "INTER-NATIONAL" || isForeignPlace(gcPlace)) {
+							gcPlace = "INTER-NATIONAL";
+							gcFullAddress = "INTER-NATIONAL";
+							gcCoords = null;
+						}
 					} else {
 						if (inForeignTerritory) {
 							if (Math.random() < 0.9) {
-								gcPlace = data.international_places[Math.floor(Math.random() * data.international_places.length)];
+								gcPlace = "INTER-NATIONAL";
+								gcFullAddress = "INTER-NATIONAL";
+								gcCoords = null;
 							} else {
-								gcPlace = weightedPlaceOfBirth(data.places_of_birth, []);
+								const fallbackObj = pickPlace("place_of_birth", gcBirthDate, null);
+								gcPlace = fallbackObj.name;
+								gcCoords = fallbackObj.coordinates;
+								gcFullAddress = fallbackObj.fullAddress || gcPlace;
 								inForeignTerritory = false;
 							}
 						} else {
-							gcPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
-							if (isForeignPlace(gcPlace)) inForeignTerritory = true;
+							const gcObj = pickPlace("place_of_birth", gcBirthDate, gcMother.birthCoords || gcFather.birthCoords);
+							gcPlace = gcObj.name;
+							gcCoords = gcObj.coordinates;
+							gcFullAddress = gcObj.fullAddress || gcPlace;
+							
+							if (isForeignPlace(gcPlace)) {
+								inForeignTerritory = true;
+								gcPlace = "INTER-NATIONAL";
+								gcFullAddress = "INTER-NATIONAL";
+								gcCoords = null;
+							}
 						}
 					}
 					previousPlace = gcPlace;
 
-					const gc = createPerson(gcGender, gcBirthDate, gcPlace, familyName);
+					const gc = createPerson(gcGender, gcBirthDate, gcPlace, familyName, gcCoords, gcFullAddress);
 					gc.mother = gcMother;
 					gc.father = gcFather;
 					generateGivenNamesForPerson(gc, [], usedFirstNames);
@@ -2597,6 +3290,11 @@
 				grandchildren.sort((a, b) => compareDates(a.birthDate, b.birthDate));
 				gcMother.children = grandchildren;
 				gcFather.children = grandchildren;
+
+				// Link siblings together
+				for (const child of grandchildren) {
+					child.siblings = grandchildren.filter(c => c !== child);
+				}
 				return grandchildren;
 			}
 
@@ -2725,20 +3423,53 @@
 					}
 
 					let birthPlace;
+					let birthCoords = null;
+					let fullBirthAddress = "";
+
 					if (Math.random() < 0.85) {
 						birthPlace = previousBirthPlace;
+						if (birthPlace === "INTER-NATIONAL" || isForeignPlace(birthPlace)) {
+							birthPlace = "INTER-NATIONAL";
+							fullBirthAddress = "INTER-NATIONAL";
+							birthCoords = null;
+						}
 					} else {
 						if (inForeignTerritory) {
-							if (Math.random() < 0.9) birthPlace = data.international_places[Math.floor(Math.random() * data.international_places.length)];
-							else {
-								birthPlace = weightedPlaceOfBirth(data.places_of_birth, []);
+							if (Math.random() < 0.9) {
+								birthPlace = "INTER-NATIONAL";
+								fullBirthAddress = "INTER-NATIONAL";
+								birthCoords = null;
+							} else {
+								const fallbackObj = pickPlace("place_of_birth", birthDate, anchorPerson.birthCoords || null);
+								birthPlace = fallbackObj.name;
+								birthCoords = fallbackObj.coordinates;
+								fullBirthAddress = fallbackObj.fullAddress || birthPlace;
 								inForeignTerritory = false;
 							}
 						} else {
-							if (mother && father && Math.random() < 0.3) birthPlace = Math.random() < 0.5 ? mother.birthPlace : father.birthPlace;
-							else {
-								birthPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
-								if (isForeignPlace(birthPlace)) inForeignTerritory = true;
+							if (mother && father && Math.random() < 0.3) {
+								birthPlace = Math.random() < 0.5 ? mother.birthPlace : father.birthPlace;
+								if(isForeignPlace(birthPlace)) {
+									birthPlace = "INTER-NATIONAL";
+									fullBirthAddress = "INTER-NATIONAL";
+									birthCoords = null;
+								} else {
+									birthCoords = birthPlace === mother.birthPlace ? mother.birthCoords : father.birthCoords;
+									fullBirthAddress = birthPlace === mother.birthPlace ? mother._currentAddress?.name : father._currentAddress?.name;
+									if(!fullBirthAddress) fullBirthAddress = birthPlace;
+								}
+							} else {
+								const cpObj = pickPlace("place_of_birth", birthDate, anchorPerson.birthCoords || (mother? mother.birthCoords : null) || null);
+								birthPlace = cpObj.name;
+								birthCoords = cpObj.coordinates;
+								fullBirthAddress = cpObj.fullAddress || birthPlace;
+								
+								if (isForeignPlace(birthPlace)) {
+									inForeignTerritory = true;
+									birthPlace = "INTER-NATIONAL";
+									fullBirthAddress = "INTER-NATIONAL";
+									birthCoords = null;
+								}
 							}
 						}
 						previousBirthPlace = birthPlace;
@@ -2746,7 +3477,7 @@
 
 					const createSiblingPerson = (sibBirthDate) => {
 						const sibGender = Math.random() < 0.5 ? 1 : 0;
-						const sib = createPerson(sibGender, sibBirthDate, birthPlace, familyName);
+						const sib = createPerson(sibGender, sibBirthDate, birthPlace, familyName, birthCoords, fullBirthAddress);
 						sib.mother = mother;
 						sib.father = father;
 						if (!mother && !father && anchorPerson.motherName && anchorPerson.fatherName) {
@@ -2812,6 +3543,11 @@
 				if (mother && father) {
 					mother.children = allChildren;
 					father.children = allChildren;
+				}
+
+				// Link siblings together
+				for (const child of allChildren) {
+					child.siblings = allChildren.filter(c => c !== child);
 				}
 
 				if (allowExSpouse && mother && father && allChildren.length >= 2 && Math.random() < EX_SPOUSE_CHANCE * 0.7) {
@@ -2898,7 +3634,9 @@
 				const personBirth = parseDate(person.birthDate);
 				const motherAge = getMotherAgeAtBirth();
 				const motherBirthYear = personBirth.year - motherAge;
-				const mother = createPerson(0, generateRandomDateInYear(motherBirthYear), weightedPlaceOfBirth(data.places_of_birth, data.international_places), person.birthFamilyName || person.familyName);
+				const motherBirthDate = generateRandomDateInYear(motherBirthYear);
+				const mObj = pickPlace("place_of_birth", motherBirthDate, person.birthCoords); 
+				const mother = createPerson(0, motherBirthDate, mObj.name, person.birthFamilyName || person.familyName, mObj.coordinates, mObj.fullAddress);
 				mother.isAncestor = true;
 
 				let fatherAgeDiff = random(Math.round(-5 * m), Math.round(10 * m));
@@ -2906,7 +3644,9 @@
 				const maxFatherBirthYear = personBirth.year - Math.round(16 * m);
 				if (fatherBirthYear > maxFatherBirthYear) fatherBirthYear = maxFatherBirthYear;
 
-				const father = createPerson(1, generateRandomDateInYear(fatherBirthYear), weightedPlaceOfBirth(data.places_of_birth, data.international_places), person.birthFamilyName || person.familyName);
+				const fatherBirthDate = generateRandomDateInYear(fatherBirthYear);
+				const fObj = pickPlace("place_of_birth", fatherBirthDate, person.birthCoords); 
+				const father = createPerson(1, fatherBirthDate, fObj.name, person.birthFamilyName || person.familyName, fObj.coordinates, fObj.fullAddress);
 				father.birthFamilyName = weightedRandomChoice(data.family_names);
 				father.isAncestor = true;
 				person.mother = mother;
@@ -2968,9 +3708,9 @@
 				const selfAge = random(Math.round(minVal * m), Math.round(maxVal * m));
 				const selfBirthYear = refDate.year - selfAge;
 				const selfBirthDate = generateRandomDateInYear(selfBirthYear, referenceDate);
-				const selfBirthPlace = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
+				const sObj = pickPlace("place_of_birth", selfBirthDate, null); const selfBirthPlace = sObj.name;
 				const selfFamilyName = weightedRandomChoice(data.family_names);
-				const self = createPerson(selfGender, selfBirthDate, selfBirthPlace, selfFamilyName);
+				const self = createPerson(selfGender, selfBirthDate, selfBirthPlace, selfFamilyName, typeof sObj !== 'undefined' ? sObj.coordinates : null, typeof sObj !== 'undefined' ? sObj.fullAddress : selfBirthPlace);
 				self.isAncestor = true;
 				generateAncestors(self, 1, upGenLimit, referenceDate);
 
@@ -3033,6 +3773,8 @@
 				}
 				if (spouse) spouseTree = generateSpouseTree(spouse, referenceDate);
 
+				simulateMigration(self, referenceDate);
+
 				return {
 					self: self,
 					selfSiblings: selfSiblings,
@@ -3068,6 +3810,156 @@
 					year -= 1;
 				}
 				return formatDate(year, month, d.day);
+			}
+
+			function simulateMigration(rootPerson, referenceDate) {
+				const m = getMultiplier();
+				let allPeople = [];
+				function collect(p) {
+					if(!p || allPeople.includes(p)) return;
+					allPeople.push(p);
+					if(p.mother) collect(p.mother);
+					if(p.father) collect(p.father);
+					if(p.spouse) collect(p.spouse);
+					if(p.exSpouses) p.exSpouses.forEach(ex=>collect(ex.exSpouse));
+					if(p.siblings) p.siblings.forEach(s=>collect(s));
+					if(p.children) p.children.forEach(c=>collect(c));
+				}
+				collect(rootPerson);
+				
+				const refYear = parseDate(referenceDate).year;
+				let minYear = refYear;
+				for(const p of allPeople) {
+					const by = parseDate(p.birthDate).year;
+					if(by < minYear) minYear = by;
+				}
+				
+				for(const p of allPeople) {
+					if(!p._currentAddress) {
+						// If child with parents, wait for the year loop to initialize from parents
+						if ((p.mother || p.father) && !p.isAncestor) continue;
+
+						let addrName = p.birthPlace;
+						if (p.addressHistory && p.addressHistory.length > 0) addrName = p.addressHistory[0].address;
+						p._currentAddress = { name: addrName, coords: p.birthCoords };
+						p._lastMoveYear = parseDate(p.birthDate).year;
+					}
+				}
+
+				const refYearInfo = parseInt(document.getElementById("birthDate").value.substring(0, 4)) || 1935;
+				const techYearInfo = parseInt(document.getElementById("technologyYearInput").value) || refYearInfo;
+				const techOffset = techYearInfo - refYearInfo;
+
+				for(let y = minYear; y <= refYear; y++) {
+					// Get urbanization for this year
+					const techDateVal = (y + techOffset) * 10000 + 101;
+					let urb = URBANISATION[0] || { migration: 0, urbancall: 0.1 };
+					for(const u of URBANISATION) {
+						const start = u.start ? parseInt(u.start) : 0;
+						const end = u.end ? parseInt(u.end) : 99999999;
+						if(techDateVal >= start && techDateVal <= end) {
+							urb = u;
+							break;
+						}
+					}
+					const urbancall = urb.urbancall || 0.1;
+
+					for(const p of allPeople) {
+						if(p.died) {
+							const dy = parseDate(p.deathDate).year;
+							if(y > dy) continue;
+						}
+						const by = parseDate(p.birthDate).year;
+						if(y < by) continue;
+						
+						const age = y - by;
+
+						// Initialize child's starting address from parents at birth
+						if (!p._currentAddress && age === 0) {
+							const parent = p.mother && p.mother._currentAddress ? p.mother : (p.father && p.father._currentAddress ? p.father : null);
+							if (parent) {
+								p._currentAddress = parent._currentAddress;
+								p.birthPlace = p._currentAddress.name;
+								p.birthCoords = p._currentAddress.coords;
+								p.addressHistory = [{ date: (p.birthDate || "").replace(/[^0-9]/g, "").substring(0,8), address: p._currentAddress.name }];
+								p._lastMoveYear = y;
+							} else {
+								// Fallback if parents not simulated or found
+								let addrName = p.birthPlace;
+								if (p.addressHistory && p.addressHistory.length > 0) addrName = p.addressHistory[0].address;
+								p._currentAddress = { name: addrName, coords: p.birthCoords };
+								p._lastMoveYear = y;
+							}
+						}
+						
+						if (!p._currentAddress) continue; // Skip if still not initialized (should not happen if loop starts from minYear)
+
+						// Define leaving age range 12-24 based on urbancall
+						// Higher urbancall -> higher leaving age
+						if (!p._leavingAge) {
+							const baseAge = 18;
+							const variance = Math.floor((urbancall * 12) - 3); // -3 to +9 range roughly
+							p._leavingAge = (baseAge + variance + (Math.floor(Math.random() * 5) - 2)) * m;
+							p._leavingAge = Math.max(12 * m, Math.min(24 * m, p._leavingAge));
+						}
+						
+						if(age < p._leavingAge) {
+							let guardian = null;
+							const isAliveInYear = (person, year) => {
+								if (!person) return false;
+								if (!person.died) return true;
+								return parseDate(person.deathDate).year >= year;
+							};
+
+							if (p.mother && isAliveInYear(p.mother, y) && p.mother._currentAddress) {
+								guardian = p.mother;
+							} else if (p.father && isAliveInYear(p.father, y) && p.father._currentAddress) {
+								guardian = p.father;
+							} else if (p.siblings) {
+								// Follow oldest living sibling who is already moved or has an address
+								const olderSib = p.siblings.find(s => s._currentAddress && isAliveInYear(s, y) && (y - parseDate(s.birthDate).year >= (s._leavingAge || 18)));
+								if (olderSib) guardian = olderSib;
+							}
+
+							if(guardian && p._currentAddress && p._currentAddress.name !== guardian._currentAddress.name) {
+								p._currentAddress = guardian._currentAddress;
+								if(!p.addressHistory) p.addressHistory = [];
+								p.addressHistory.push({ date: formatDate(y, 1, 1).replace(/[^0-9]/g, "").substring(0,8), address: p._currentAddress.name });
+							}
+							continue;
+						}
+
+						if(p.spouse && !p.spouse.died && age >= p._leavingAge) {
+							if(p.gender === 0 && p._currentAddress && p.spouse._currentAddress && p._currentAddress.name !== p.spouse._currentAddress.name) {
+								if(Math.random() < 0.6) {
+									p._currentAddress = p.spouse._currentAddress; 
+									if(!p.addressHistory) p.addressHistory = [];
+									p.addressHistory.push({ date: formatDate(y, 1, 1).replace(/[^0-9]/g, "").substring(0,8), address: p._currentAddress.name });
+								}
+							}
+						}
+
+						if(age >= p._leavingAge && y - (p._lastMoveYear || by) >= 10 * m) {
+							if(Math.random() < 0.1) { 
+								const oldAddrName = p._currentAddress ? p._currentAddress.name : "";
+								let newPlaceObj = pickPlace("place_of_birth", formatDate(y, 1, 1), p._currentAddress ? p._currentAddress.coords : null);
+								
+								if (newPlaceObj.fullAddress !== oldAddrName) {
+									p._currentAddress = { name: newPlaceObj.fullAddress, coords: newPlaceObj.coordinates };
+									if(!p.addressHistory) p.addressHistory = [];
+									p.addressHistory.push({ date: formatDate(y, 1, 1).replace(/[^0-9]/g, "").substring(0,8), address: p._currentAddress.name });
+								}
+								p._lastMoveYear = y;
+							}
+						}
+					}
+				}
+				
+				for(const p of allPeople) {
+					if(p.died && p._currentAddress && !p.inMilitary && !p.deathFromInput) {
+						p.deathPlace = p._currentAddress.name;
+					}
+				}
 			}
 
 			function formatPersonInline(person, showParents = true, useChildFormat = false, showSpouse = true, showChildren = true, showExSpouse = true) {
@@ -3166,6 +4058,11 @@
 						})
 						.join(" , ");
 					result += ` , children : ${childrenStr}`;
+				}
+
+				if (person.addressHistory && person.addressHistory.length > 0) {
+					const addrStrItems = person.addressHistory.map(a => a.date + " " + a.address);
+					result += `<span class="address-history">${formatAddressList(addrStrItems)}</span>`;
 				}
 
 				return result;
@@ -3772,14 +4669,7 @@
 				const anchorPlace = anchorPlaceInput ? anchorPlaceInput.value.trim() : "";
 				const stationary = stationaryInput ? stationaryInput.checked : false;
 
-				let placeOfBirth;
-				if (anchorPlace && Math.random() * 100 < localityStrength) {
-					placeOfBirth = anchorPlace;
-				} else {
-					placeOfBirth = weightedPlaceOfBirth(data.places_of_birth, data.international_places);
-				}
 
-				const isSubjectLocal = placeOfBirth === anchorPlace;
 
 				if (deathDateInput && deathDateInput.value.trim().length === 8) {
 					const dVal = deathDateInput.value.trim();
@@ -3808,8 +4698,29 @@
 				const maxDay = maxDayList[birthMonth - 1];
 				const birthDay = random(1, maxDay);
 				const birthDateStr = formatDate(birthYear, birthMonth, birthDay);
+
+				let placeOfBirth;
+				let placeOfBirthCoords = null;
+				let fullBirthAddress = "";
+				if (anchorPlace && Math.random() * 100 < localityStrength) {
+					placeOfBirth = anchorPlace;
+					fullBirthAddress = anchorPlace;
+				} else {
+					const pbObj = pickPlace("place_of_birth", birthDateStr, null);
+					placeOfBirth = pbObj.name;
+					placeOfBirthCoords = pbObj.coordinates;
+					fullBirthAddress = pbObj.fullAddress || placeOfBirth;
+				}
+
+				const isSubjectLocal = placeOfBirth === anchorPlace;
 				const familyName = weightedRandomChoice(data.family_names);
 				const givenNames = generateGivenNames(gender, [], 0);
+
+				const mockRoot = createPerson(gender, birthDateStr, placeOfBirth, familyName, placeOfBirthCoords, fullBirthAddress);
+				if (deathDateInput && deathDateInput.value.trim().length === 8 && /^\d{8}$/.test(deathDateInput.value.trim())) {
+					mockRoot.died = true;
+					mockRoot.deathDate = formatDate(referenceDate.year, referenceDate.month, referenceDate.day);
+				}
 
 				const pM = Math.min(0.95, 0.05 + (0.035 / m) * (age - 18 * m));
 				const isMarried = Math.random() < pM;
@@ -3852,26 +4763,42 @@
 					const spouseBirthDate = generateRandomDate(spouseBirthYear, spouseBirthYear);
 
 					let spousePlace;
+					let spouseCoords = null;
+					let fullSpouseAddress = "";
 					if (stationary) {
 						if (!isSubjectLocal && Math.random() < 0.5) {
 							spousePlace = anchorPlace;
+							fullSpouseAddress = anchorPlace;
 						} else {
-							spousePlace = weightedRandomChoice(data.places_of_birth);
+							const spObj = pickPlace("place_of_birth", spouseBirthDate, placeOfBirthCoords);
+							spousePlace = spObj.name;
+							spouseCoords = spObj.coordinates;
+							fullSpouseAddress = spObj.fullAddress || spousePlace;
 						}
 					} else {
-						spousePlace = weightedRandomChoice(data.places_of_birth);
+						const spObj = pickPlace("place_of_birth", spouseBirthDate, placeOfBirthCoords);
+						spousePlace = spObj.name;
+						spouseCoords = spObj.coordinates;
+						fullSpouseAddress = spObj.fullAddress || spousePlace;
 					}
+
+					mockRoot.spouse = createPerson(spouseGender, spouseBirthDate, spousePlace, "", spouseCoords, fullSpouseAddress);
+					mockRoot.spouse.spouse = mockRoot;
 
 					const isSpouseLocal = spousePlace === anchorPlace;
 					const formattedSpousePlace = applyHistoricalPlaceName(spousePlace, spouseBirthDate);
-					result += ` , spouse : ${spouseNames} ${spouseBirthDate} ${formattedSpousePlace}`;
+					let spouseStr = `${spouseNames} ${spouseBirthDate} ${formattedSpousePlace}`;
 					const pC = Math.min(0.9, 0.1 + (0.03 / m) * yearsMarried);
 					const hasChildren = Math.random() < pC;
 
 					if (!isSubjectLocal && !isSpouseLocal && !hasChildren && stationary) {
 						spousePlace = anchorPlace;
-						result = result.replace(formattedSpousePlace, applyHistoricalPlaceName(spousePlace, spouseBirthDate));
+						spouseStr = spouseStr.replace(formattedSpousePlace, applyHistoricalPlaceName(spousePlace, spouseBirthDate));
+						mockRoot.spouse.birthPlace = spousePlace;
+						mockRoot.spouse.fullAddress = spousePlace;
 					}
+
+					mockRoot.spouseStr = spouseStr;
 
 					if (hasChildren) {
 						let numChildren = 1;
@@ -3955,6 +4882,7 @@
 									tempChildren.push({
 										names: childNames,
 										date: childBirthDate,
+										gender: childGender
 									});
 								}
 							}
@@ -3966,49 +4894,119 @@
 
 						for (let i = 0; i < tempChildren.length; i++) {
 							let childPlace;
+							let childCoords = null;
+							let fullChildAddress = "";
 							const isLastChild = i === tempChildren.length - 1;
 
 							if (stationary) {
 								if (isSubjectLocal || isSpouseLocal) {
 									childPlace = anchorPlace;
+									fullChildAddress = anchorPlace;
 								} else {
 									if (hasReachedAnchor) {
 										childPlace = anchorPlace;
+										fullChildAddress = anchorPlace;
 									} else if (isLastChild) {
 										childPlace = anchorPlace;
+										fullChildAddress = anchorPlace;
 									} else {
 										if (Math.random() < 0.4) {
 											childPlace = anchorPlace;
 											hasReachedAnchor = true;
+											fullChildAddress = anchorPlace;
 										} else {
-											childPlace = weightedRandomChoice(data.places_of_birth);
+											const cdObj = pickPlace("place_of_birth", tempChildren[i].date, placeOfBirthCoords);
+											childPlace = cdObj.name;
+											childCoords = cdObj.coordinates;
+											fullChildAddress = cdObj.fullAddress || childPlace;
 										}
 									}
 								}
 							} else {
 								if (i === 0) {
-									childPlace = Math.random() < 0.3 ? placeOfBirth : spousePlace;
+									let parentCoords = Math.random() < 0.5 ? placeOfBirthCoords : mockRoot.spouse.birthCoords;
+									if (!parentCoords) parentCoords = placeOfBirthCoords || mockRoot.spouse.birthCoords;
+									
+									let typePool = [];
+									for(const row of PLACE_ROWS) {
+										if(row.type === "place_of_birth" && row.data) typePool = typePool.concat(row.data);
+									}
+									
+									let cityPlace = getParentCityPlace(parentCoords, typePool);
+									if (cityPlace) {
+										childPlace = cityPlace.name;
+										childCoords = cityPlace.coordinates;
+										fullChildAddress = buildFullAddress(childCoords, typePool, false) || childPlace;
+									} else {
+										childPlace = placeOfBirth;
+										childCoords = placeOfBirthCoords;
+										fullChildAddress = fullBirthAddress;
+									}
 								} else {
 									if (Math.random() < 0.2) {
-										childPlace = weightedRandomChoice(data.places_of_birth);
+										let typePool = [];
+										for(const row of PLACE_ROWS) {
+											if(row.type === "place_of_birth" && row.data) typePool = typePool.concat(row.data);
+										}
+										let cityPlace = getParentCityPlace(placeOfBirthCoords, typePool);
+										if (cityPlace) {
+											childPlace = cityPlace.name;
+											childCoords = cityPlace.coordinates;
+											fullChildAddress = buildFullAddress(childCoords, typePool, false) || childPlace;
+										} else {
+											const cdObj = pickPlace("place_of_birth", tempChildren[i].date, placeOfBirthCoords);
+											childPlace = cdObj.name;
+											childCoords = cdObj.coordinates;
+											fullChildAddress = cdObj.fullAddress || childPlace;
+										}
 									} else {
 										childPlace = previousChildPlace;
+										childCoords = mockRoot.children[mockRoot.children.length - 1].birthCoords;
+										fullChildAddress = mockRoot.children[mockRoot.children.length - 1].fullAddress;
 									}
 								}
 							}
 
 							previousChildPlace = childPlace;
-							const formattedChildPlace = applyHistoricalPlaceName(childPlace, tempChildren[i].date);
-							childrenStr.push(`${tempChildren[i].names} ${formattedChildPlace} ${tempChildren[i].date}`);
-						}
-						if (childrenStr.length > 0) {
-							result += ` , children : ${childrenStr.join(" , ")}`;
+							if(!mockRoot.children) mockRoot.children = [];
+							mockRoot.children.push(createPerson(tempChildren[i].gender, tempChildren[i].date, childPlace, familyName, childCoords, fullChildAddress));
+							mockRoot.children[mockRoot.children.length - 1].tempNames = tempChildren[i].names;
 						}
 					}
 				} else if (!isSubjectLocal && stationary) {
 					placeOfBirth = anchorPlace;
 					result = result.replace(formattedPlaceOfBirth, applyHistoricalPlaceName(placeOfBirth, birthDateStr));
 				}
+				
+				simulateMigration(mockRoot, formatDate(referenceDate.year, referenceDate.month, referenceDate.day));
+				
+				if (isMarried) {
+					if (mockRoot.spouse.addressHistory && mockRoot.spouse.addressHistory.length > 0) {
+						const addrStrItems = mockRoot.spouse.addressHistory.map(a => a.date + " " + a.address);
+						mockRoot.spouseStr += `<span class="address-history">${formatAddressList(addrStrItems)}</span>`;
+					}
+					result += ` , spouse : ${mockRoot.spouseStr}`;
+
+					if (mockRoot.children && mockRoot.children.length > 0) {
+						let finalChildrenStrs = [];
+						for (let i = 0; i < mockRoot.children.length; i++) {
+							let childObj = mockRoot.children[i];
+							let cStr = `${childObj.tempNames} ${applyHistoricalPlaceName(childObj.birthPlace, childObj.birthDate)} ${childObj.birthDate}`;
+							if (childObj.addressHistory && childObj.addressHistory.length > 0) {
+								const addrStrItems = childObj.addressHistory.map(a => a.date + " " + a.address);
+								cStr += `<span class="address-history">${formatAddressList(addrStrItems)}</span>`;
+							}
+							finalChildrenStrs.push(cStr);
+						}
+						result += ` , children : ${finalChildrenStrs.join(" , ")}`;
+					}
+				}
+
+				if(mockRoot.addressHistory && mockRoot.addressHistory.length > 0) {
+					const addrStrItems = mockRoot.addressHistory.map(a => a.date + " " + a.address);
+					result += `<span class="address-history">${formatAddressList(addrStrItems)}</span>`;
+				}
+				
 				const bYear = parseDate(birthDateStr).year;
 				const prob = getMaskProbability(bYear);
 				const shouldMask = Math.random() < prob;
