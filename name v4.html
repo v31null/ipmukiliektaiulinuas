@@ -404,10 +404,7 @@
 						</tr>
 					</table>
 					<table id="nameEraesTable" class="family-tree-table"></table>
-					<div style="display: flex; align-items: baseline">
-						<label>PATTERN RE‑PLACEMENTES :</label>
-						<input type="text" id="replacePatternInput" value="DEUTSCHES REICHLEIN" style="width: 50%" />
-					</div>
+
 				</div>
 				<div style="flex: 1; min-width: 400px">
 					<table class="family-tree-table" style="table-layout: fixed">
@@ -470,6 +467,9 @@
 		</div>
 		<script>
 			var data = null;
+			let NAME_ERAES = [];
+			let WAR_PERIODS = [];
+			let URBANISATION = [];
 
 			document.getElementById("dataSelector").addEventListener("change", function () {
 				const file = this.value;
@@ -492,6 +492,21 @@
 				script.onload = function () {
 					statusEl.textContent = "LOADED: " + file.toUpperCase();
 					statusEl.style.color = "#4caf50";
+
+					// Pull NAME_ERAES, WAR_PERIODS, URBANISATION from the loaded .js data object
+					if (data && data.NAME_ERAES) {
+						NAME_ERAES = data.NAME_ERAES;
+						initializeNameEraesTable();
+					}
+					if (data && data.WAR_PERIODS) {
+						WAR_PERIODS = data.WAR_PERIODS;
+						initializeWarsTable();
+					}
+					if (data && data.URBANISATION) {
+						URBANISATION = data.URBANISATION;
+						initializeUrbanisationTable();
+					}
+
 					if (data && data.default_settings) {
 						PLACE_ROWS = [];
 						let promises = [];
@@ -513,7 +528,7 @@
 							};
 							PLACE_ROWS.push(rowObj);
 
-							let p = fetch(rowObj.fileName)
+							let p = fetch("data/" + rowObj.fileName)
 								.then(res => {
 									if (!res.ok) throw new Error("Network response was not ok");
 									return res.json();
@@ -522,7 +537,7 @@
 									rowObj.data = json;
 								})
 								.catch(err => {
-									console.warn("Could not auto-load: " + rowObj.fileName);
+									console.warn("Could not auto-load: data/" + rowObj.fileName);
 								});
 							promises.push(p);
 						});
@@ -611,45 +626,29 @@
 				return null;
 			}
 
+			// applyHistoricalPlaceName — uppercases the place name and appends the era NAMEN
+			// that matches the birth date from the NAME_ERAES table, using a random separator:
+			// /TEXT  -TEXT  .TEXT  (TEXT)  //TEXT
+			const _PLACE_SEPARATORS = ["/", "-", ".", "(", "//"];
 			function applyHistoricalPlaceName(rawPlaceName, birthDate) {
-				if (!rawPlaceName || !birthDate) {
-					return rawPlaceName;
-				}
-
-				const birth = parseDate(birthDate);
-				const birthTotalDays = birth.year * 365.2425 + birth.month * 30.4375 + birth.day;
-
-				const patternInput = document.getElementById("replacePatternInput").value.trim();
-				if (!patternInput) return rawPlaceName;
-
-				const escapedPattern = patternInput.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-				const targetRegex = new RegExp(escapedPattern, "gi");
-
-				if (!targetRegex.test(rawPlaceName)) {
-					return rawPlaceName;
-				}
-				targetRegex.lastIndex = 0;
-
+				if (!rawPlaceName || !birthDate) return rawPlaceName || "";
+				const upper = rawPlaceName.toUpperCase();
 				const eraes = readNameEraesFromTable();
-				if (eraes.length === 0) return rawPlaceName;
-
-				const lastEra = eraes[eraes.length - 1];
-				const lastEraTotalDays = lastEra.lastYear * 365.2425 + lastEra.lastMonth * 30.4375 + lastEra.lastDay;
-				if (birthTotalDays >= lastEraTotalDays) {
-					return rawPlaceName;
-				}
-
-				let newText = rawPlaceName;
-				for (let i = 0; i < eraes.length; i++) {
-					const era = eraes[i];
-					const eraTotalDays = era.lastYear * 365.2425 + era.lastMonth * 30.4375 + era.lastDay;
-					if (birthTotalDays < eraTotalDays) {
-						newText = era.namen;
+				if (!eraes || eraes.length === 0) return upper;
+				const birth = parseDate(birthDate);
+				const birthDays = birth.year * 365.2425 + birth.month * 30.4375 + birth.day;
+				let eraName = null;
+				for (const era of eraes) {
+					const eraDays = era.lastYear * 365.2425 + era.lastMonth * 30.4375 + era.lastDay;
+					if (birthDays < eraDays) {
+						eraName = era.namen;
 						break;
 					}
 				}
-
-				return rawPlaceName.replace(targetRegex, newText);
+				if (!eraName) return upper;
+				const sep = _PLACE_SEPARATORS[Math.floor(Math.random() * _PLACE_SEPARATORS.length)];
+				if (sep === "(") return upper + "(" + eraName + ")";
+				return upper + sep + eraName;
 			}
 			document.getElementById("birthDate").addEventListener("input", function (e) {
 				this.value = this.value.replace(/\D/g, "").substring(0, 8);
@@ -1051,7 +1050,7 @@
 					date: document.getElementById("birthDate").value,
 					tech: document.getElementById("technologyYearInput").value,
 					m: document.getElementById("lifeMultiplier").value,
-					replacePatternInput: document.getElementById("replacePatternInput").value,
+
 					upGen: document.getElementById("upGenInput").value,
 					minAge: document.getElementById("minAgeInput").value,
 					maxAge: document.getElementById("maxAgeInput").value,
@@ -1113,7 +1112,7 @@
 						document.getElementById("technologyYearInput").value = s.tech || "1993";
 						document.getElementById("lifeMultiplier").value = s.m || "1.0";
 						document.getElementById("upGenInput").value = s.upGen || "2";
-						document.getElementById("replacePatternInput").value = s.replacePatternInput || "DEUTSCHES REICHLEIN";
+
 						document.getElementById("minAgeInput").value = s.minAge || "12";
 						document.getElementById("maxAgeInput").value = s.maxAge || "67";
 						document.getElementById("deathDateInput").value = s.deathDate || "";
@@ -1209,10 +1208,6 @@
 			const MALE_WAR_DEATH_CHANCE = 0.005;
 			const PEACETIME_MILITARY_DEATH_CHANCE = 0.001;
 
-			let WAR_PERIODS = [
-				{ start: { year: 1852, month: 2, day: 13 }, end: { year: 1854, month: 11, day: 11 } },
-				{ start: { year: 1934, month: 8, day: 19 }, end: { year: 9999, month: 12, day: 30 } },
-			];
 			const VISIBILITY_DATA = {
 				1841: 99.8,
 				1842: 99.8,
@@ -1360,42 +1355,62 @@
 
 				return person.birthDate;
 			}
-			let NAME_ERAES = [
-				{ lastYear: -200, lastMonth: 1, lastDay: 1, namen: "???" },
-				{ lastYear: -100, lastMonth: 1, lastDay: 1, namen: "PROTO‑SAXEN‑BUNDLEIN ODER NA" },
-				{ lastYear: 20, lastMonth: 1, lastDay: 1, namen: "FRIESEN‑POLITYLEIN ODER NA" },
-				{ lastYear: 60, lastMonth: 1, lastDay: 1, namen: "GERMANISCHES KAISERLEIN ODER NA" },
-				{ lastYear: 240, lastMonth: 1, lastDay: 1, namen: "FRANKEN‑REICHLEIN ODER NA" },
-				{ lastYear: 500, lastMonth: 1, lastDay: 1, namen: "NORD-GERMANISCHES KAISERLEIN ODER NA" },
-				{ lastYear: 853, lastMonth: 1, lastDay: 1, namen: "OST-SAXEN‑CAESARTUM ODER NA" },
-				{ lastYear: 1320, lastMonth: 1, lastDay: 1, namen: "HEILIGES DEUTSCHES REICHLEIN" },
-				{ lastYear: 1852, lastMonth: 1, lastDay: 1, namen: "DOPPEL‑KOENIGTUM DES MITTELS-MAENNLEINS EUROPALEINS" },
-				{ lastYear: 1854, lastMonth: 1, lastDay: 1, namen: "ANGEFOCHTEN" },
-				{ lastYear: 1908, lastMonth: 1, lastDay: 1, namen: "DEUTSCHES BUNDESLEIN" },
-			];
-
 			let PLACE_ROWS = [];
 
-			let URBANISATION = [
-				{ migration: 30,  urbancall: 0.05,  start: "",         end: "17000101" },
-				{ migration: 50,  urbancall: 0.10,  start: "17000101", end: "18000101" },
-				{ migration: 100, urbancall: 0.20,  start: "18000101", end: "18500101" },
-				{ migration: 200, urbancall: 0.35,  start: "18500101", end: "19000101" },
-				{ migration: 500, urbancall: 0.55,  start: "19000101", end: "19500101" },
-				{ migration: 999, urbancall: 0.75,  start: "19500101", end: ""         },
-			];
+
+			// Returns YYYYMMDD integer with one real calendar day subtracted
+			function dateIntSubtractOneDay(d) {
+				const s = String(d).padStart(8, "0");
+				const y = parseInt(s.substring(0, s.length - 4));
+				const m = parseInt(s.substring(s.length - 4, s.length - 2));
+				const day = parseInt(s.substring(s.length - 2));
+				// Use JS Date for correct month/year rollover
+				const dt = new Date(y, m - 1, day - 1); // day-1 = previous day
+				// JS Date two-digit years (0-99) are interpreted as 1900+, patch that:
+				if (y >= 0 && y < 100) dt.setFullYear(y, m - 1, day - 1);
+				const ry = dt.getFullYear();
+				const rm = dt.getMonth() + 1;
+				const rd = dt.getDate();
+				return ry * 10000 + rm * 100 + rd;
+			}
 
 			function recalculatePlaceIds() {
 				const table = document.getElementById("placesTable");
 				let counts = { place_of_birth: 0, death_place: 0 };
+				
+				let rowsData = [];
 				for (let i = 1; i < table.rows.length; i++) {
 					const row = table.rows[i];
 					const select = row.querySelector("select");
-					if (!select) continue;
-					const type = select.value;
-					counts[type]++;
-					const span = row.querySelector(".place-id");
-					if (span) span.textContent = counts[type];
+					const inputs = row.querySelectorAll("input[type='text']");
+					if (!select || inputs.length < 2) continue;
+					
+					rowsData.push({
+						row: row,
+						type: select.value,
+						start: parseInt(inputs[0].value) || 0,
+						endInput: inputs[1]
+					});
+				}
+
+				for (let i = 0; i < rowsData.length; i++) {
+					const data = rowsData[i];
+					counts[data.type]++;
+					const span = data.row.querySelector(".place-id");
+					if (span) span.textContent = counts[data.type];
+					
+					if (!data.endInput.value) {
+						let nextStart = 99991230;
+						for (let j = 0; j < rowsData.length; j++) {
+							if (i === j) continue;
+							if (rowsData[j].type === data.type && rowsData[j].start > data.start) {
+								if (rowsData[j].start < nextStart) nextStart = rowsData[j].start;
+							}
+						}
+						data.endInput.placeholder = nextStart !== 99991230 ? dateIntSubtractOneDay(nextStart) : "99991230";
+					} else {
+						data.endInput.placeholder = "";
+					}
 				}
 			}
 
@@ -1447,8 +1462,8 @@
 				}
 
 				row.innerHTML = `
-					<td><span class="place-id" style="display:inline-block;width:100%;text-align:center;font-weight:bold;"></span></td>
-					<td>
+					<td style="width: 15%"><span class="place-id" style="display:inline-block;width:100%;text-align:center;font-weight:bold;"></span></td>
+					<td style="width: 20%">
 						<select onchange="recalculatePlaceIds()" style="width:100%;">
 							<option value="place_of_birth" ${type === "place_of_birth" ? "selected" : ""}>place_of_birth</option>
 							<option value="death_place" ${type === "death_place" ? "selected" : ""}>death_place</option>
@@ -1458,8 +1473,8 @@
 						<input type="file" style="display:none;" accept=".json" onchange="handlePlaceFileUpload(this)">
 						<button style="width:100%;padding:2px;font-size:12px;" onclick="this.previousElementSibling.click()">${fileText}</button>
 					</td>
-					<td><input type="text" value="${start}" maxlength="8"></td>
-					<td><input type="text" value="${end}" maxlength="8"></td>
+					<td style="width: 15%"><input type="text" value="${start}" maxlength="8" oninput="recalculatePlaceIds()"></td>
+					<td style="width: 15%"><input type="text" value="${end}" maxlength="8" oninput="recalculatePlaceIds()"></td>
 				`;
 				if (placeData && placeData.data) {
 					row.querySelector("button").style.color = "#4caf50";
@@ -1504,6 +1519,36 @@
 				if(URBANISATION.length === 0) {
 					addUrbanisationRow({ migration: 0, urbancall: 0.1, start: "", end: "" });
 				}
+				recalculateUrbanisationEndDates();
+			}
+
+			function recalculateUrbanisationEndDates() {
+				const table = document.getElementById("urbanisationTable");
+				let rowsData = [];
+				for (let i = 1; i < table.rows.length; i++) {
+					const row = table.rows[i];
+					const inputs = row.querySelectorAll("input");
+					if (inputs.length < 4) continue;
+					rowsData.push({
+						start: parseInt(inputs[2].value) || 0,
+						endInput: inputs[3]
+					});
+				}
+				for (let i = 0; i < rowsData.length; i++) {
+					const data = rowsData[i];
+					if (!data.endInput.value) {
+						let nextStart = 99991230;
+						for (let j = 0; j < rowsData.length; j++) {
+							if (i === j) continue;
+							if (rowsData[j].start > data.start) {
+								if (rowsData[j].start < nextStart) nextStart = rowsData[j].start;
+							}
+						}
+						data.endInput.placeholder = nextStart !== 99991230 ? (nextStart - 1) : "99991230";
+					} else {
+						data.endInput.placeholder = "";
+					}
+				}
 			}
 
 			function addUrbanisationRow(urbData = null) {
@@ -1517,8 +1562,8 @@
 				row.innerHTML = `
 					<td><input type="number" value="${migration}"></td>
 					<td><input type="number" step="0.001" value="${urbancall}" min="0" max="1"></td>
-					<td><input type="text" value="${start}" maxlength="8"></td>
-					<td><input type="text" value="${end}" maxlength="8"></td>
+					<td><input type="text" value="${start}" maxlength="8" oninput="recalculateUrbanisationEndDates()"></td>
+					<td><input type="text" value="${end}" maxlength="8" oninput="recalculateUrbanisationEndDates()"></td>
 				`;
 			}
 
@@ -1636,6 +1681,7 @@
 			});
 
 			document.addEventListener("DOMContentLoaded", function () {
+				// Tables start empty; they fill when a .js data-set is selected
 				initializeNameEraesTable();
 				initializeWarsTable();
 				initializePlacesTable();
@@ -1791,19 +1837,54 @@
 				return null;
 			}
 
-			function pickPlace(type, dateStr, anchorCoords = null) {
-				let candidates = [];
-				const dateVal = parseInt(dateStr.replace(/[^0-9]/g, "").substring(0, 8)) || 0;
-				
-				for(const row of PLACE_ROWS) {
-					if(row.type === type) {
+			function _getEffectiveTypePool(type, dateVal) {
+				let pool = [];
+				for (const row of PLACE_ROWS) {
+					if (row.type === type && row.data) {
 						const start = row.start ? parseInt(row.start) : 0;
-						const end = row.end ? parseInt(row.end) : 99999999;
-						if (dateVal >= start && dateVal <= end && row.data) {
-							candidates = candidates.concat(row.data);
+						let end = row.end ? parseInt(row.end) : 99991230;
+						if (!row.end) {
+							let nextStart = 99991230;
+							for (const r2 of PLACE_ROWS) {
+								if (r2.type === type && r2.start) {
+									const s2 = parseInt(r2.start);
+									if (s2 > start && s2 < nextStart) nextStart = s2;
+								}
+							}
+							if (nextStart !== 99991230) end = nextStart - 1;
+						}
+						if (dateVal >= start && dateVal <= end) {
+							pool = pool.concat(row.data);
 						}
 					}
 				}
+				return pool;
+			}
+
+			function _getEffectiveUrbanisation(dateVal) {
+				let urb = URBANISATION[0] || { migration: 0, urbancall: 0.1 };
+				for (const u of URBANISATION) {
+					const start = u.start ? parseInt(u.start) : 0;
+					let end = u.end ? parseInt(u.end) : 99991230;
+					if (!u.end) {
+						let nextStart = 99991230;
+						for (const u2 of URBANISATION) {
+							const s2 = u2.start ? parseInt(u2.start) : 0;
+							if (s2 > start && s2 < nextStart) nextStart = s2;
+						}
+						if (nextStart !== 99991230) end = nextStart - 1;
+					}
+					if (dateVal >= start && dateVal <= end) {
+						urb = u;
+						break;
+					}
+				}
+				return urb;
+			}
+
+			function pickPlace(type, dateStr, anchorCoords = null) {
+				const dateVal = parseInt(dateStr.replace(/[^0-9]/g, "").substring(0, 8)) || 0;
+				let candidates = _getEffectiveTypePool(type, dateVal);
 
 				const anchorFallback = document.getElementById("anchorPlaceInput").value || "UNBEKANNT";
 				if(candidates.length === 0) {
@@ -1822,15 +1903,7 @@
 				const calendarYear = Math.floor(dateVal / 10000);
 				const techDateVal = ((calendarYear - refYear) + techYear) * 10000 + 101; 
 				
-				let urb = URBANISATION[0] || { migration: 0, urbancall: 0.1 };
-				for(const u of URBANISATION) {
-					const start = u.start ? parseInt(u.start) : 0;
-					const end = u.end ? parseInt(u.end) : 99999999;
-					if(techDateVal >= start && techDateVal <= end) {
-						urb = u;
-						break;
-					}
-				}
+				let urb = _getEffectiveUrbanisation(techDateVal);
 
 				const migration = urb.migration;
 				const urbancall = urb.urbancall;
@@ -1851,17 +1924,8 @@
 					// 3. THE FIX: If the strict limit is empty, do NOT teleport to a distant location.
 					// We will synthesize a placeholder at the anchor location to keep genealogy focused.
 					if (filtered.length === 0) {
-						let typePool = [];
 						const dateValInt = parseInt(dateStr.replace(/[^0-9]/g, "").substring(0, 8)) || 0;
-						for(const row of PLACE_ROWS) {
-							if(row.type === type && row.data) {
-								const start = row.start ? parseInt(row.start) : 0;
-								const end = row.end ? parseInt(row.end) : 99999999;
-								if (dateValInt >= start && dateValInt <= end) {
-									typePool = typePool.concat(row.data);
-								}
-							}
-						}
+						let typePool = _getEffectiveTypePool(type, dateValInt);
 						if(typePool.length === 0) {
 							for(const row of PLACE_ROWS) { if(row.type === type && row.data) typePool = typePool.concat(row.data); }
 						}
@@ -1922,17 +1986,8 @@
 					}
 				}
 				
-				let typePool = [];
 				const dateValInt = parseInt(dateStr.replace(/[^0-9]/g, "").substring(0, 8)) || 0;
-				for(const row of PLACE_ROWS) {
-					if(row.type === type && row.data) {
-						const start = row.start ? parseInt(row.start) : 0;
-						const end = row.end ? parseInt(row.end) : 99999999;
-						if (dateValInt >= start && dateValInt <= end) {
-							typePool = typePool.concat(row.data);
-						}
-					}
-				}
+				let typePool = _getEffectiveTypePool(type, dateValInt);
 				if (typePool.length === 0) {
 					for(const row of PLACE_ROWS) {
 						if(row.type === type && row.data) typePool = typePool.concat(row.data);
@@ -3853,15 +3908,7 @@
 				for(let y = minYear; y <= refYear; y++) {
 					// Get urbanization for this year
 					const techDateVal = (y + techOffset) * 10000 + 101;
-					let urb = URBANISATION[0] || { migration: 0, urbancall: 0.1 };
-					for(const u of URBANISATION) {
-						const start = u.start ? parseInt(u.start) : 0;
-						const end = u.end ? parseInt(u.end) : 99999999;
-						if(techDateVal >= start && techDateVal <= end) {
-							urb = u;
-							break;
-						}
-					}
+					let urb = _getEffectiveUrbanisation(techDateVal);
 					const urbancall = urb.urbancall || 0.1;
 
 					for(const p of allPeople) {

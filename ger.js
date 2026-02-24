@@ -3546,10 +3546,37 @@ var data = {
 		{ name: "ZIMMERMANN", weight: 4 },
 		{ name: "ZINK", weight: 4 },
 		{ name: "ZOELLER", weight: 4 },
-	],default_settings: [
-		{ start: 0, file: "ger1" },
-		{ start: 18520213,end: 18541111, file: "death_place_ger1" },
-		{ start: 19340822,end: 99990101, file: "death_place_ger2" }
 	],
+	default_settings: [
+		{ start: 0, file: "ger1" },
+		{ start: 18520213, end: 18541111, file: "death_place_ger1" },
+		{ start: 19340822, end: 99990101, file: "death_place_ger2" },
+	],
+	WAR_PERIODS: [
+		{ start: { year: 1852, month: 2, day: 13 }, end: { year: 1854, month: 11, day: 11 } },
+		{ start: { year: 1934, month: 8, day: 19 }, end: { year: 9999, month: 12, day: 30 } },
+	],
+	URBANISATION: [
+		{ migration: 30, urbancall: 0.05, start: "", end: "17000101" },
+		{ migration: 50, urbancall: 0.1, start: "17000101", end: "18000101" },
+		{ migration: 100, urbancall: 0.2, start: "18000101", end: "18500101" },
+		{ migration: 200, urbancall: 0.35, start: "18500101", end: "19000101" },
+		{ migration: 500, urbancall: 0.55, start: "19000101", end: "19500101" },
+		{ migration: 999, urbancall: 0.75, start: "19500101", end: "" },
+	],
+	NAME_ERAES: [
+		{ lastYear: -200, lastMonth: 1, lastDay: 1, namen: "???" },
+		{ lastYear: -100, lastMonth: 1, lastDay: 1, namen: "PROTO‑SAXEN‑BUNDLEIN ODER NA" },
+		{ lastYear: 20, lastMonth: 1, lastDay: 1, namen: "FRIESEN‑POLITYLEIN ODER NA" },
+		{ lastYear: 60, lastMonth: 1, lastDay: 1, namen: "GERMANISCHES KAISERLEIN ODER NA" },
+		{ lastYear: 240, lastMonth: 1, lastDay: 1, namen: "FRANKEN‑REICHLEIN ODER NA" },
+		{ lastYear: 500, lastMonth: 1, lastDay: 1, namen: "NORD-GERMANISCHES KAISERLEIN ODER NA" },
+		{ lastYear: 853, lastMonth: 1, lastDay: 1, namen: "OST-SAXEN‑CAESARTUM ODER NA" },
+		{ lastYear: 1320, lastMonth: 1, lastDay: 1, namen: "HEILIGES DEUTSCHES REICHLEIN" },
+		{ lastYear: 1852, lastMonth: 1, lastDay: 1, namen: "DOPPEL‑KOENIGTUM DES MITTELS-MAENNLEINS EUROPALEINS" },
+		{ lastYear: 1854, lastMonth: 1, lastDay: 1, namen: "ANGEFOCHTEN" },
+		{ lastYear: 1908, lastMonth: 1, lastDay: 1, namen: "DEUTSCHES BUNDESLEIN" },
+	],
+
 	international_places: ["WASHINGTON", "NEUYORK", "HAMBURG", "NEW YORK", "CHICAGO", "LOS ANGELES", "SAN FRANCISCO", "BOSTON", "PHILADELPHIA", "BALTIMORE", "MILWꜶKEE", "CINCINNATI", "SAINT LOUIS", "PITTSBURGH", "CLEVELAND", "DETROIT", "BUFFALO", "ROCHESTER", "SYRACUSE", "ALBANY", "NEWARK", "PARIS", "LONDON", "AMSTERDAM", "ROTTERDAM", "ANTWERPEN", "BRUESSEL", "ROM", "MAILAND", "GENUA", "TURIN", "VENEDIG", "FLORENZ", "NEAPEL", "PALERMO", "BARCELONA", "MADRID", "LISSABON", "KOPENHAGEN", "STOCKHOLM", "OSLO", "KRISTIANIA", "HELSINGFORS", "REVAL", "TALLINN", "RIGA", "LIBꜶ", "WINDꜶ", "MITꜶ", "KOWNO", "WILNA", "GRODNO", "MINSK", "WARSCHꜶ", "LODZ", "KRAKꜶ", "LEMBERG", "CZERNOWIꜨ", "BUKAREST", "BUDAPEST", "PRESSBURG", "BRATISLꜸA", "KASCHꜶ", "KOSICE", "DEBRECEN", "SZEGEDIN", "AGRAM", "ZAGREB", "BELGRAD", "SARAJEWO", "SOFIA", "KONSTANTINOPEL", "ISTANBUL", "ATHEN", "SALONIKI", "TALLIN", "UUS TALLINN", "MAARJALINN", "NISUMAEGI", "TIPPSADAM", "CHARKOW", "OSAKA", "YOKOHAMA", "KYOTO", "KOBE", "NAGOYA", "PEKING", "SCHANGHAI", "KANTON", "HONGKONG", "SINGAPUR", "BATꜸIA", "JAKARTA", "MANILA", "SYDNEY", "MELBOURNE", "ꜶCKLAND", "WELLINGTON", "KAPSTADT", "JOHANNESBURG", "KAIRO", "ALEXANDRIA", "TUNIS", "ALGIER", "CASABLANCA", "BUENOS AIRES", "MONTEVIDEO", "RIO DE JANEIRO", "SAO PꜶLO", "SANTIAGO", "LIMA", "BOGOTA", "CARACAS", "HꜸANNA", "MEXIKO", "TORONTO", "MONTREAL", "QUEBEC", "VANCOUVER", "WINNIPEG", "MARSEILLE", "LYON", "TOULOUSE", "NIZZA", "BORDEꜶX", "LILLE", "NANTES", "STRASSBURG", "MONTPELLIER", "RENNES", "REIMS", "LE HꜸRE", "SAINT ETIENNE", "TOULON", "GRENOBLE", "DIJON", "ANGERS", "NIMES", "VILLEURBANNE", "CLERMONT FERRAND", "LE MANS", "AIX EN PROVENCE", "BREST", "TOURS", "AMIENS", "LIMOGES", "PERPIGNAN", "BESANCON", "ORLEANS", "MUELHꜶSEN", "MANCHESTER", "BIRMINGHAM", "LIVERPOOL", "LEEDS", "SHEFFIELD", "BRISTOL", "NEWCASTLE", "NOTTINGHAM", "SOUTHAMPTON", "LEICESTER", "PORTSMOUTH", "BRIGHTON", "PLYMOUTH", "READING", "COVENTRY", "HULL", "BRADFORD", "STOKE", "WOLVERHAMPTON", "DERBY", "SWANSEA", "OXFORD", "CAMBRIDGE", "NORWICH", "YORK", "BATH", "CANTERBURY", "EXETER", "GLOUCESTER", "CHESTER", "DENVER", "SEATTLE", "DALLAS", "HOUSTON", "ATLANTA", "MIAMI", "MINNEAPOLIS", "SAINT PꜶL", "NEW ORLEANS", "KANSAS CITY", "INDIANAPOLIS", "LOUISVILLE", "MEMPHIS", "NASHVILLE", "PROVIDENCE", "HARTFORD", "NEW HꜸEN", "RICHMOND", "NORFOLK", "CHARLESTON", "SꜸANNAH", "PORTLAND", "OMAHA", "DES MOINES", "SALT LAKE CITY", "PHOENIX", "LOS ANGELES", "SAN DIEGO", "SACRAMENTO", "OAKLAND"],
 };
