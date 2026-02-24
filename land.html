@@ -448,8 +448,8 @@ textarea:focus { background: #060c14; }
     <div class="sb-cell"><span class="lbl">PTS</span><span class="val" id="sb-pts">0</span></div>
     <div class="sb-cell"><span class="lbl">CLOSED</span><span class="val" id="sb-closed">—</span></div>
     <div class="sb-cell"><span class="lbl">STATUS</span><span class="val" id="sb-status">READY</span></div>
-    <div class="sb-cell" style="margin-left:auto;border-left:1px solid var(--border);border-right:none"><span class="lbl">DATUM</span><span class="val">WGS54</span></div>
-    <div class="sb-cell"><span class="lbl">REF</span><span class="val">OSM-v2026</span></div>
+    <div class="sb-cell" style="margin-left:auto;border-left:1px solid var(--border);border-right:none"><span class="lbl">DATUM</span><span class="val">WGS84</span></div>
+    <div class="sb-cell"><span class="lbl">REF</span><span class="val">OSM-v2025</span></div>
 </div>
 
 <div id="notif"></div>
@@ -521,6 +521,7 @@ function parseDir(tok) {
     if (c[tok] !== undefined) return c[tok];
     const m = tok.match(/^AZI(\d+\.?\d*)$/);
     if (m) return parseFloat(m[1]);
+    if (/^\d+\.?\d*$/.test(tok)) return parseFloat(tok) % 360;
     return null;
 }
 
@@ -955,7 +956,7 @@ function buildFromGeoData(gd, work) {
                 const prevPt = work[i-1];
                 const fppDist = hav(prevPt[0], prevPt[1], p[0], p[1]);
                 const fppBd = brng(prevPt[0], prevPt[1], p[0], p[1]);
-                const fppCard = bToCard(fppBd);
+                const fppCard = String(Math.round(fppBd)).padStart(3,'0');
                 const fppDstr = fmtDist(fppDist);
                 str = `${act} FPP O${fppDstr}@${fppCard}`;
                 obj = {
@@ -979,7 +980,7 @@ function buildFromGeoData(gd, work) {
             } else {
                 const dist = hav(plat, plon, p[0], p[1]);
                 const bd = brng(plat, plon, p[0], p[1]);
-                const card = bToCard(bd);
+                const card = String(Math.round(bd)).padStart(3,'0');
                 const dstr = fmtDist(dist);
 
                 str = dist < 0.05
@@ -999,7 +1000,7 @@ function buildFromGeoData(gd, work) {
         legObjs.push(obj);
     });
 
-    const code = `BORDMET/1.0 ID=BORDER1 DATE=${ds} DATUM=WGS54 REF=OSM-v2026\n`
+    const code = `BORDMET/1.0 ID=BORDER1 DATE=${ds} DATUM=WGS84 REF=OSM-v2025\n`
         + legStrs.join('\n') + (cl ? '\nCL' : '');
 
     document.getElementById('ta-bordmet').value = code;
@@ -1009,7 +1010,7 @@ function buildFromGeoData(gd, work) {
 
     const bjson = {
         format:'BORDMET/JSON', version:'1.0', id:'BORDER1',
-        date:ds, datum:'WGS54', ref:'OSM-v2026',
+        date:ds, datum:'WGS84', ref:'OSM-v2025',
         bordmet_code: code,
         human_prose: prose,
         legs: legObjs,
@@ -1030,7 +1031,7 @@ function buildProse(legs, cl) {
     const dw = {0:'due north',45:'to the north-east',90:'due east',135:'to the south-east',
                 180:'due south',225:'to the south-west',270:'due west',315:'to the north-west'};
 
-    function dWords(b) { return dw[Math.round(b/45)*45%360] || `bearing ${Math.round(b)} degrees`; }
+    function dWords(b) { return `bearing ${Math.round(b).toString().padStart(3,'0')}°`; }
     function distW(km) { return km>=1 ? `${km.toFixed(1)} kilometres` : `${Math.round(km*1000)} metres`; }
 
     let p = '';
