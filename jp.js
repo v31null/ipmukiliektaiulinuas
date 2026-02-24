@@ -91639,7 +91639,8 @@ data = {
 	{ name: "脇本", weight: 7700 }
 ],
 default_settings: [
-		{ start: 0, file: "jp2" },
+		{ start: 0, file: "jp" },
+		{ start: 6000101, file: "jp2" },
 		{ start: 13000101, file: "jp1" },
 		{ start: 18790214, file: "jp3" },
 		{ start: 0, file: "death_place_jp" }
