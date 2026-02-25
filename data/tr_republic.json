@@ -621,33 +621,6 @@
     ]
   },
   {
-    "name": "Kızıl Dağ",
-    "place": "region",
-    "rank": 1,
-    "coordinates": [
-      40.4621761,
-      32.936059
-    ]
-  },
-  {
-    "name": "Göller Yöresi",
-    "place": "region",
-    "rank": 1,
-    "coordinates": [
-      37.9976617,
-      30.8826179
-    ]
-  },
-  {
-    "name": "المشرق العربي",
-    "place": "region",
-    "rank": 1,
-    "coordinates": [
-      23.0329733,
-      40.9344837
-    ]
-  },
-  {
     "name": "Şehzadeler",
     "place": "county",
     "rank": 2,

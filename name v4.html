@@ -310,7 +310,7 @@
 	</head>
 	<body>
 		<div class="container">
-					<a href="land.html">Land maker.</a>
+			<a href="land.html">Land maker.</a>
 			<div style="display: flex; flex-direction: row; flex-wrap: nowrap; align-content: space-around; justify-content: space-between; align-items: center">
 				<div style="margin-top: 10px; display: flex; gap: 10px; align-items: center">
 					<label for="dataSelector">DATA SET</label>
@@ -405,7 +405,6 @@
 						</tr>
 					</table>
 					<table id="nameEraesTable" class="family-tree-table"></table>
-
 				</div>
 				<div style="flex: 1; min-width: 400px">
 					<table class="family-tree-table" style="table-layout: fixed">
@@ -453,7 +452,7 @@
 				<input type="text" id="textInput" />
 			</div>
 			<div class="button-container">
-				<button id="textGen" style="width: 90%">TEXT GEN</button>	
+				<button id="textGen" style="width: 90%">TEXT GEN</button>
 			</div>
 			<div class="button-container">
 				<button id="createMale">CREATE MALE</button>
@@ -494,7 +493,6 @@
 					statusEl.textContent = "LOADED: " + file.toUpperCase();
 					statusEl.style.color = "#4caf50";
 
-					// Pull NAME_ERAES, WAR_PERIODS, URBANISATION from the loaded .js data object
 					if (data && data.NAME_ERAES) {
 						NAME_ERAES = data.NAME_ERAES;
 						initializeNameEraesTable();
@@ -511,38 +509,38 @@
 					if (data && data.default_settings) {
 						PLACE_ROWS = [];
 						let promises = [];
-						
-						data.default_settings.forEach(function(ds) {
+
+						data.default_settings.forEach(function (ds) {
 							let type = "place_of_birth";
 							if (ds.file.startsWith("death_place")) {
 								type = "death_place";
 							}
 							const startStr = ds.start ? String(ds.start) : "";
 							const endStr = ds.end ? String(ds.end) : "";
-							
+
 							let rowObj = {
 								type: type,
 								fileName: ds.file + ".json",
 								start: startStr,
 								end: endStr,
-								data: []
+								data: [],
 							};
 							PLACE_ROWS.push(rowObj);
 
 							let p = fetch("data/" + rowObj.fileName)
-								.then(res => {
+								.then((res) => {
 									if (!res.ok) throw new Error("Network response was not ok");
 									return res.json();
 								})
-								.then(json => {
+								.then((json) => {
 									rowObj.data = json;
 								})
-								.catch(err => {
+								.catch((err) => {
 									console.warn("Could not auto-load: data/" + rowObj.fileName);
 								});
 							promises.push(p);
 						});
-						
+
 						Promise.allSettled(promises).then(() => {
 							initializePlacesTable();
 						});
@@ -588,7 +586,8 @@
 
 			function normalizePlaceName(name) {
 				if (!name) return "";
-				return name.toUpperCase()
+				return name
+					.toUpperCase()
 					.replace(/[のノ乃]/g, "ノ")
 					.replace(/[ヶケがガ]/g, "ケ")
 					.replace(/[ッツ]/g, "ツ");
@@ -598,8 +597,7 @@
 				if (!placeName) return null;
 				const searchName = normalizePlaceName(placeName);
 				let matches = [];
-				
-				// Search through all loaded data in PLACE_ROWS
+
 				for (const row of PLACE_ROWS) {
 					if (row.data) {
 						for (const p of row.data) {
@@ -609,7 +607,6 @@
 									const d = haversineDistance(anchorCoords[0], anchorCoords[1], p.coordinates[0], p.coordinates[1]);
 									matches.push({ coords: p.coordinates, dist: d });
 								} else {
-									// If no anchor, look for an exact name match first
 									if (pNorm === searchName) return p.coordinates;
 									matches.push({ coords: p.coordinates, dist: 999999 });
 								}
@@ -627,9 +624,6 @@
 				return null;
 			}
 
-			// applyHistoricalPlaceName — uppercases the place name and appends the era NAMEN
-			// that matches the birth date from the NAME_ERAES table, using a random separator:
-			// /TEXT  -TEXT  .TEXT  (TEXT)  //TEXT
 			const _PLACE_SEPARATORS = ["/", "-", ".", "(", "//"];
 			function applyHistoricalPlaceName(rawPlaceName, birthDate) {
 				if (!rawPlaceName || !birthDate) return rawPlaceName || "";
@@ -650,6 +644,11 @@
 				const sep = _PLACE_SEPARATORS[Math.floor(Math.random() * _PLACE_SEPARATORS.length)];
 				if (sep === "(") return upper + "(" + eraName + ")";
 				return upper + sep + eraName;
+			}
+
+			function getShortPlace(parts) {
+				if (!parts || parts.length === 0) return "";
+				return parts[parts.length - 1];
 			}
 			document.getElementById("birthDate").addEventListener("input", function (e) {
 				this.value = this.value.replace(/\D/g, "").substring(0, 8);
@@ -681,15 +680,14 @@
 					const motherAge = getMotherAgeAtBirth();
 					const motherBirthYear = personBirth.year - motherAge;
 					const motherBD = generateRandomDateInYear(motherBirthYear);
-					
-					// Resolve person's coordinates if missing to avoid teleporting ancestors
+
 					if (!person.birthCoords && person.birthPlace) {
 						person.birthCoords = resolveCoordsForPlace(person.birthPlace, null);
 					}
 
 					const mPl = pickPlace("place_of_birth", motherBD, person.birthCoords);
 					const mother = createPerson(0, motherBD, mPl.name, person.familyName, mPl.coordinates, mPl.fullAddress);
-					mother.birthCoords = mPl.coordinates; // Explicitly ensure propagation
+					mother.birthCoords = mPl.coordinates;
 					mother.givenNames = person.motherName;
 					person.mother = mother;
 
@@ -935,15 +933,12 @@
 					const childEntries = childrenStr.split(/[\s\u00A0]*,[\s\u00A0]*/);
 
 					childEntries.forEach((entry) => {
-						// 1. Find the birth date first (the anchor)
 						const dateMatch = entry.match(/(\d{4}\/\d{2}\/\d{2}(?:\sA\.C\.)?)/);
 
 						if (dateMatch) {
 							const cDate = dateMatch[1];
 							const dateIndex = dateMatch.index;
 
-							// Isolate the "Header" (everything before the birth date)
-							// We trim the "NA" or "ODER NA" specifically if it's hanging off the end
 							let nameAndPlace = entry.substring(0, dateIndex).trim();
 							nameAndPlace = nameAndPlace.replace(/,\s*$/, "").replace(/\sODER\sNA$/, "");
 
@@ -960,10 +955,8 @@
 							const child = createPerson(cGender, cDate, cPlace, familyName);
 							child.givenNames = cName;
 
-							// 2. Isolate the "Footer" (everything AFTER the birth date)
 							const remainder = entry.substring(dateIndex + cDate.length);
 
-							// 3. Look for "died" ONLY in the remainder to avoid the "NA" place-name bug
 							const childDeathMatch = remainder.match(/died[\s\u00A0]+(.+?)[\s\u00A0]+(\d{4}\/\d{2}\/\d{2}(?:\sA\.C\.)?)/);
 							if (childDeathMatch) {
 								child.died = true;
@@ -971,7 +964,7 @@
 								child.deathDate = childDeathMatch[2].trim();
 							}
 							child.deathFromInput = true;
-							// 4. Handle "born of" logic in the remainder
+
 							const bornOfRegex = /born[\s\u00A0]+of[\s\u00A0]*:[\s\u00A0]*(.+?)[\s\u00A0]*&[\s\u00A0]*(.+)/;
 							const bornMatch = remainder.match(bornOfRegex);
 							let assignedMother = null;
@@ -1338,20 +1331,16 @@
 				const birthDateInput = document.getElementById("birthDate").value;
 				const refYear = parseInt(birthDateInput.substring(0, 4)) || 1935;
 				const techYear = parseInt(document.getElementById("technologyYearInput").value) || refYear;
-				
-				// Calculate how many years ago from technology year
+
 				const yearsAgo = techYear - year;
-				
-				// Map to the 1841-1955 visibility curve relative to 1993 (the 'present' for the data)
-				// 1993 - 1841 = 152 years ago (99.8% mask)
-				// 1993 - 1955 = 38 years ago (2.0% mask)
+
 				const mappedYear = 1993 - yearsAgo;
 
 				if (mappedYear < 1841) return 1.0;
 				if (mappedYear > 1955) return 0.0;
 
 				const y = Math.floor(mappedYear);
-				const prob = VISIBILITY_DATA[y] !== undefined ? VISIBILITY_DATA[y] : (y < 1841 ? 100 : 0);
+				const prob = VISIBILITY_DATA[y] !== undefined ? VISIBILITY_DATA[y] : y < 1841 ? 100 : 0;
 				return prob / 100;
 			}
 			function getMaskedDate(person) {
@@ -1365,16 +1354,14 @@
 			}
 			let PLACE_ROWS = [];
 
-
-			// Returns YYYYMMDD integer with one real calendar day subtracted
 			function dateIntSubtractOneDay(d) {
 				const s = String(d).padStart(8, "0");
 				const y = parseInt(s.substring(0, s.length - 4));
 				const m = parseInt(s.substring(s.length - 4, s.length - 2));
 				const day = parseInt(s.substring(s.length - 2));
-				// Use JS Date for correct month/year rollover
-				const dt = new Date(y, m - 1, day - 1); // day-1 = previous day
-				// JS Date two-digit years (0-99) are interpreted as 1900+, patch that:
+
+				const dt = new Date(y, m - 1, day - 1);
+
 				if (y >= 0 && y < 100) dt.setFullYear(y, m - 1, day - 1);
 				const ry = dt.getFullYear();
 				const rm = dt.getMonth() + 1;
@@ -1385,19 +1372,19 @@
 			function recalculatePlaceIds() {
 				const table = document.getElementById("placesTable");
 				let counts = { place_of_birth: 0, death_place: 0 };
-				
+
 				let rowsData = [];
 				for (let i = 1; i < table.rows.length; i++) {
 					const row = table.rows[i];
 					const select = row.querySelector("select");
 					const inputs = row.querySelectorAll("input[type='text']");
 					if (!select || inputs.length < 2) continue;
-					
+
 					rowsData.push({
 						row: row,
 						type: select.value,
 						start: dateToInteger(inputs[0].value),
-						endInput: inputs[1]
+						endInput: inputs[1],
 					});
 				}
 
@@ -1406,9 +1393,9 @@
 					counts[data.type]++;
 					const span = data.row.querySelector(".place-id");
 					if (span) span.textContent = counts[data.type];
-					
+
 					if (!data.endInput.value) {
-						let nextStart = 20000000; // Far future
+						let nextStart = 20000000;
 						for (let j = 0; j < rowsData.length; j++) {
 							if (i === j) continue;
 							if (rowsData[j].type === data.type && rowsData[j].start > data.start) {
@@ -1429,14 +1416,14 @@
 				const btn = row.querySelector("button");
 
 				const reader = new FileReader();
-				reader.onload = function(e) {
+				reader.onload = function (e) {
 					try {
 						const json = JSON.parse(e.target.result);
 						row._placeData = json;
 						row._fileName = file.name;
 						btn.textContent = file.name;
 						btn.style.color = "#4caf50";
-					} catch(err) {
+					} catch (err) {
 						btn.textContent = "ERROR";
 						btn.style.color = "#e91e63";
 					}
@@ -1450,7 +1437,7 @@
 				PLACE_ROWS.forEach((place) => {
 					addPlacesRow(place);
 				});
-				if(PLACE_ROWS.length === 0) {
+				if (PLACE_ROWS.length === 0) {
 					addPlacesRow();
 				}
 				recalculatePlaceIds();
@@ -1463,7 +1450,7 @@
 				const fileText = placeData && placeData.fileName ? placeData.fileName : "LOAD JSON";
 				const start = placeData ? placeData.start : "";
 				const end = placeData ? placeData.end : "";
-				
+
 				if (placeData && placeData.data) {
 					row._placeData = placeData.data;
 					row._fileName = placeData.fileName;
@@ -1502,7 +1489,7 @@
 					const end = inputs[1].value || "";
 					const data = row._placeData || [];
 					const fileName = row._fileName || "";
-					
+
 					if (data.length > 0) {
 						result.push({
 							id: parseInt(id),
@@ -1510,7 +1497,7 @@
 							fileName: fileName,
 							start: start,
 							end: end,
-							data: data
+							data: data,
 						});
 					}
 				}
@@ -1545,7 +1532,7 @@
 				URBANISATION.forEach((urb) => {
 					addUrbanisationRow(urb);
 				});
-				if(URBANISATION.length === 0) {
+				if (URBANISATION.length === 0) {
 					addUrbanisationRow({ migration: 0, urbancall: 0.1, start: "", end: "" });
 				}
 				recalculateUrbanisationEndDates();
@@ -1560,7 +1547,7 @@
 					if (inputs.length < 4) continue;
 					rowsData.push({
 						start: dateToInteger(inputs[2].value),
-						endInput: inputs[3]
+						endInput: inputs[3],
 					});
 				}
 				for (let i = 0; i < rowsData.length; i++) {
@@ -1587,7 +1574,7 @@
 				const urbancall = urbData ? urbData.urbancall : 0.1;
 				const start = urbData ? urbData.start : "";
 				const end = urbData ? urbData.end : "";
-				
+
 				row.innerHTML = `
 					<td><input type="number" value="${migration}"></td>
 					<td><input type="number" step="0.001" value="${urbancall}" min="0" max="1"></td>
@@ -1693,15 +1680,15 @@
 				} else if (e.key === "Delete") {
 					const active = document.activeElement;
 					const tables = ["nameEraesTable", "warsTable", "placesTable", "urbanisationTable"];
-					
-					for(let id of tables) {
+
+					for (let id of tables) {
 						let table = document.getElementById(id);
 						if (table.contains(active)) {
 							const row = active.closest("tr");
 							if (row && row.rowIndex > 0) {
 								e.preventDefault();
 								row.remove();
-								if(id === "placesTable") recalculatePlaceIds();
+								if (id === "placesTable") recalculatePlaceIds();
 							}
 							break;
 						}
@@ -1710,14 +1697,13 @@
 			});
 
 			document.addEventListener("DOMContentLoaded", function () {
-				// Tables start empty; they fill when a .js data-set is selected
 				initializeNameEraesTable();
 				initializeWarsTable();
 				initializePlacesTable();
 				initializeUrbanisationTable();
-				
-				document.getElementById("showAddressChanges").addEventListener("change", function() {
-					if(this.checked) {
+
+				document.getElementById("showAddressChanges").addEventListener("change", function () {
+					if (this.checked) {
 						document.getElementById("output").classList.add("show-addresses");
 					} else {
 						document.getElementById("output").classList.remove("show-addresses");
@@ -1781,56 +1767,52 @@
 				return array[array.length - 1].name || array[array.length - 1];
 			}
 			function formatAddressList(items) {
-				if(!items || items.length === 0) return "";
-				
-				// 1. Apply Masking to the dates in items and 2. Format to 8-digits
-				const processedItems = items.map(item => {
+				if (!items || items.length === 0) return "";
+
+				const processedItems = items.map((item) => {
 					const datePart = item.date;
 					const addrPart = item.address;
 					const d = parseDate(datePart);
 					const prob = getMaskProbability(d.year);
-					
+
 					let displayDate = datePart;
 					if (Math.random() < prob) {
 						displayDate = formatDate(d.year, 7, 1);
 					}
-					
-					// Format to 8-digit (01720101)
+
 					const isACMatch = displayDate.includes(" A.C.");
 					const cleanDigits = displayDate.replace(/\d{4}\/\d{2}\/\d{2}/, (m) => m.replace(/\//g, "")).substring(0, 8);
 					return cleanDigits + (isACMatch ? " A.C." : "") + " " + addrPart;
 				});
 
-				if(processedItems.length === 1) return " — " + processedItems[0];
-				if(processedItems.length === 2) return " — " + processedItems[0] + " & " + processedItems[1];
+				if (processedItems.length === 1) return " — " + processedItems[0];
+				if (processedItems.length === 2) return " — " + processedItems[0] + " & " + processedItems[1];
 				return " — " + processedItems.slice(0, -1).join(" , ") + " , & " + processedItems[processedItems.length - 1];
 			}
 
 			function haversineDistance(lat1, lon1, lat2, lon2) {
-				const R = 6371; // km
-				const dLat = (lat2 - lat1) * Math.PI / 180;
-				const dLon = (lon2 - lon1) * Math.PI / 180;
-				const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
-				return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+				const R = 6371;
+				const dLat = ((lat2 - lat1) * Math.PI) / 180;
+				const dLon = ((lon2 - lon1) * Math.PI) / 180;
+				const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+				return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 			}
 
 			function buildFullAddress(coords, pool, militaryLevelOnly = false) {
-				if(!coords || !pool || pool.length === 0) return "";
+				if (!coords || !pool || pool.length === 0) return "";
 				let bestForRank = {};
-				
-				for(const place of pool) {
-					if(!place.coordinates || !place.rank) continue;
+
+				for (const place of pool) {
+					if (!place.coordinates || !place.rank) continue;
 					const dist = haversineDistance(coords[0], coords[1], place.coordinates[0], place.coordinates[1]);
-					if(!bestForRank[place.rank] || dist < bestForRank[place.rank].dist) {
+					if (!bestForRank[place.rank] || dist < bestForRank[place.rank].dist) {
 						bestForRank[place.rank] = { place: place.name, dist: dist };
 					}
 				}
-				
+
 				let ranksToUse = militaryLevelOnly ? [1, 2] : [7, 6, 5, 4, 3, 2, 1];
 				let parts = [];
-				
-				// Maximum allowable distance (in km) to associate a place of a given rank
-				// This prevents pulling in regions from hundreds of kilometers away just because they are the "closest" in the dataset.
+
 				const maxDistForRank = {
 					7: 15,
 					6: 30,
@@ -1838,33 +1820,37 @@
 					4: 90,
 					3: 130,
 					2: 180,
-					1: 300
+					1: 300,
 				};
 
-				for(const r of ranksToUse) {
-					if(bestForRank[r] && bestForRank[r].dist <= (maxDistForRank[r] || 500)) {
+				const cityName = bestForRank[3] ? bestForRank[3].place : null;
+				const provinceName = bestForRank[1] ? bestForRank[1].place : null;
+				const cityMatchesProvince = cityName && provinceName && cityName === provinceName;
+
+				for (const r of ranksToUse) {
+					if (r === 3 && cityMatchesProvince) continue;
+					if (bestForRank[r] && bestForRank[r].dist <= (maxDistForRank[r] || 500)) {
 						if (parts.length === 0 || parts[parts.length - 1] !== bestForRank[r].place) {
 							parts.push(bestForRank[r].place);
 						}
 					}
 				}
-				
 				parts = [...new Set(parts)];
-				
-				return parts.join(" ").toUpperCase();
+				const partsUp = parts.map((p) => p.toUpperCase());
+				return { text: partsUp.join(" "), parts: partsUp };
 			}
 			function getParentCityPlace(coords, pool) {
 				if (!coords || !pool || pool.length === 0) return null;
 				let bestForRank = {};
-				
-				for(const place of pool) {
-					if(!place.coordinates || !place.rank) continue;
+
+				for (const place of pool) {
+					if (!place.coordinates || !place.rank) continue;
 					const dist = haversineDistance(coords[0], coords[1], place.coordinates[0], place.coordinates[1]);
-					if(!bestForRank[place.rank] || dist < bestForRank[place.rank].dist) {
+					if (!bestForRank[place.rank] || dist < bestForRank[place.rank].dist) {
 						bestForRank[place.rank] = { place: place.name, coords: place.coordinates, dist: dist };
 					}
 				}
-				
+
 				const maxDistForRank = {
 					7: 15,
 					6: 30,
@@ -1872,7 +1858,7 @@
 					4: 90,
 					3: 130,
 					2: 180,
-					1: 300
+					1: 300,
 				};
 
 				for (const r of [3, 4, 5, 6, 7]) {
@@ -1880,7 +1866,7 @@
 						return { name: bestForRank[r].place, coordinates: bestForRank[r].coords, rank: r };
 					}
 				}
-				
+
 				return null;
 			}
 
@@ -1934,30 +1920,28 @@
 				let candidates = _getEffectiveTypePool(type, dateVal);
 
 				const anchorFallback = fallbackName || document.getElementById("anchorPlaceInput").value || "UNBEKANNT";
-				if(candidates.length === 0) {
-					// Fallback to ANY data for this type regardless of era
-					for(const row of PLACE_ROWS) {
-						if(row.type === type && row.data) candidates = candidates.concat(row.data);
+				if (candidates.length === 0) {
+					for (const row of PLACE_ROWS) {
+						if (row.type === type && row.data) candidates = candidates.concat(row.data);
 					}
 				}
-				
-				if(candidates.length === 0) {
+
+				if (candidates.length === 0) {
 					return { name: anchorFallback, coordinates: anchorCoords || null, rank: null, fullAddress: anchorFallback };
 				}
 
 				const refYear = parseInt(document.getElementById("birthDate").value.substring(0, 4)) || 1935;
 				const techYear = parseInt(document.getElementById("technologyYearInput").value) || refYear;
 				const calendarYear = Math.floor(dateVal / 10000);
-				const techDateVal = ((calendarYear - refYear) + techYear) * 10000 + 101; 
-				
+				const techDateVal = (calendarYear - refYear + techYear) * 10000 + 101;
+
 				let urb = _getEffectiveUrbanisation(techDateVal);
 
 				const migration = urb.migration;
 				const urbancall = urb.urbancall;
 
-				if(anchorCoords) {
-					// 1. Calculate distance for all candidates exactly ONCE
-					candidates.forEach(p => {
+				if (anchorCoords) {
+					candidates.forEach((p) => {
 						if (p.coordinates) {
 							p._dist = haversineDistance(anchorCoords[0], anchorCoords[1], p.coordinates[0], p.coordinates[1]);
 						} else {
@@ -1965,14 +1949,11 @@
 						}
 					});
 
-					// 2. Filter strictly by the historical limit
-					let filtered = candidates.filter(p => p._dist <= migration);
+					let filtered = candidates.filter((p) => p._dist <= migration);
 
-					// Dataset mapping: If the old border is gone, attach them to the 
-					// closest point in the new dataset map to represent the migration
 					if (filtered.length === 0) {
 						candidates.sort((a, b) => a._dist - b._dist);
-						candidates = candidates.slice(0, 5).filter(p => p._dist !== Infinity);
+						candidates = candidates.slice(0, 5).filter((p) => p._dist !== Infinity);
 						if (candidates.length === 0) {
 							return { name: anchorFallback, coordinates: anchorCoords, rank: null, fullAddress: anchorFallback };
 						}
@@ -1982,17 +1963,17 @@
 				}
 
 				const isUrban = Math.random() < urbancall;
-				// Urban: prioritizes Quarters (6), Neighbourhoods (7), and Towns (4)
-				const urbanWeights = {1:0.1, 2:0.2, 3:0.6, 4:1.5, 5:0.3, 6:1.8, 7:2.0};
-				// Rural: prioritizes Villages (5)
-				const ruralWeights = {1:0.01, 2:0.05, 3:0.1, 4:0.5, 5:2.0, 6:0.4, 7:0.2};
+
+				const urbanWeights = { 1: 0.1, 2: 0.2, 3: 0.6, 4: 1.5, 5: 0.3, 6: 1.8, 7: 2.0 };
+
+				const ruralWeights = { 1: 0.01, 2: 0.05, 3: 0.1, 4: 0.5, 5: 2.0, 6: 0.4, 7: 0.2 };
 				const weights = isUrban ? urbanWeights : ruralWeights;
 
 				let totalWeight = 0;
-				for(const c of candidates) {
+				for (const c of candidates) {
 					let w = weights[c.rank || 5] || 0.1;
-					// Boost if it's the 'self' (same as anchorCoords) or immediate vicinity
-					if (c._dist === 0) w *= 2.0; 
+
+					if (c._dist === 0) w *= 2.0;
 					else if (c._dist < 1) w *= 1.5;
 
 					c._computedWeight = w;
@@ -2001,30 +1982,32 @@
 
 				let rand = Math.random() * totalWeight;
 				let selected = candidates[candidates.length - 1];
-				for(const c of candidates) {
+				for (const c of candidates) {
 					rand -= c._computedWeight;
-					if(rand <= 0) {
+					if (rand <= 0) {
 						selected = c;
 						break;
 					}
 				}
-				
+
 				const dv = dateToInteger(dateStr);
 				let typePool = _getEffectiveTypePool(type, dv);
 				if (typePool.length === 0) {
-					for(const row of PLACE_ROWS) {
-						if(row.type === type && row.data) typePool = typePool.concat(row.data);
+					for (const row of PLACE_ROWS) {
+						if (row.type === type && row.data) typePool = typePool.concat(row.data);
 					}
 				}
 
-				// (Intentional deletion of the 100km hardcoded "sanity clamp". 
-				// Boundary differences between distinct datasets must be bridged by migration)
+				const addrObj = selected.coordinates ? buildFullAddress(selected.coordinates, typePool, false) : null;
+				const fullAddrText = addrObj && addrObj.text ? addrObj.text : selected.name.toUpperCase();
+				const addrParts = addrObj && addrObj.parts && addrObj.parts.length > 0 ? addrObj.parts : [selected.name.toUpperCase()];
 
 				return {
 					name: selected.name,
 					coordinates: selected.coordinates,
 					rank: selected.rank,
-					fullAddress: buildFullAddress(selected.coordinates, typePool, false) || selected.name
+					fullAddress: fullAddrText,
+					addressParts: addrParts,
 				};
 			}
 
@@ -2459,11 +2442,9 @@
 				const refDate = parseDate(referenceDate);
 				const birthDate = parseDate(person.birthDate);
 
-				// Accordion: The window of service is stretched proportionally
 				const minS = Math.round(SOLDIER_AGE_MIN * m);
 				const maxS = Math.round(SOLDIER_AGE_MAX * m);
 
-				// Realism: 1 year in the army is equally dangerous for a human or an elf
 				const deathChance = PEACETIME_MILITARY_DEATH_CHANCE;
 
 				for (let year = birthDate.year + minS; year <= birthDate.year + maxS && year <= refDate.year; year++) {
@@ -2582,13 +2563,13 @@
 				}
 			}
 
-			function createPerson(gender, birthDate, birthPlace, familyName, birthCoords = null, fullAddress = "") {
+			function createPerson(gender, birthDate, birthPlace, familyName, birthCoords = null, fullAddress = "", addressParts = []) {
 				return {
 					gender: gender,
 					birthDate: birthDate,
 					birthPlace: birthPlace,
 					birthCoords: birthCoords,
-					addressHistory: fullAddress ? [{date: birthDate || "", address: fullAddress}] : [],
+					addressHistory: fullAddress ? [{ date: birthDate || "", address: fullAddress, parts: addressParts }] : [],
 					familyName: familyName,
 					birthFamilyName: familyName,
 					givenNames: null,
@@ -2652,7 +2633,7 @@
 				const exPlace = pickPlace("place_of_birth", exSpouseBirthDate, person.birthCoords);
 				const exSpouseBirthPlace = exPlace.name;
 				const exSpouseBirthFamilyName = weightedRandomChoice(data.family_names);
-				const exSpouse = createPerson(exSpouseGender, exSpouseBirthDate, exSpouseBirthPlace, exSpouseBirthFamilyName, exPlace.coordinates, exPlace.fullAddress);
+				const exSpouse = createPerson(exSpouseGender, exSpouseBirthDate, exSpouseBirthPlace, exSpouseBirthFamilyName, exPlace.coordinates, exPlace.fullAddress, exPlace.addressParts);
 				exSpouse.birthFamilyName = exSpouseBirthFamilyName;
 
 				generateGivenNamesForPerson(exSpouse, []);
@@ -2683,7 +2664,7 @@
 						const newExPlace = pickPlace("place_of_birth", newSpouseBirthDate, exSpouse.birthCoords);
 						const newSpouseBirthPlace = newExPlace.name;
 						const newSpouseBirthFamilyName = weightedRandomChoice(data.family_names);
-						exSpouseNewSpouse = createPerson(newSpouseGender, newSpouseBirthDate, newSpouseBirthPlace, newSpouseBirthFamilyName, newExPlace.coordinates, newExPlace.fullAddress);
+						exSpouseNewSpouse = createPerson(newSpouseGender, newSpouseBirthDate, newSpouseBirthPlace, newSpouseBirthFamilyName, newExPlace.coordinates, newExPlace.fullAddress, newExPlace.addressParts);
 						exSpouseNewSpouse.birthFamilyName = newSpouseBirthFamilyName;
 						generateGivenNamesForPerson(exSpouseNewSpouse, []);
 
@@ -2801,7 +2782,6 @@
 				const sibAge = calculateAge(sibling.birthDate, referenceDate);
 
 				if (sibling.died) {
-					// If they died before 18, they absolutely cannot marry
 					const ageAtDeath = calculateAge(sibling.birthDate, sibling.deathDate);
 					if (ageAtDeath < 18 * m) return;
 				}
@@ -2822,7 +2802,7 @@
 				const spouseBirthYear = refDate.year - spouseAge;
 				const spouseBirthDate = generateRandomDateInYear(spouseBirthYear);
 				const spousePlace = pickPlace("place_of_birth", spouseBirthDate, sibling.birthCoords, sibling.birthPlace);
-				const spouse = createPerson(spouseGender, spouseBirthDate, spousePlace.name, weightedRandomChoice(data.family_names), spousePlace.coordinates, spousePlace.fullAddress);
+				const spouse = createPerson(spouseGender, spouseBirthDate, spousePlace.name, weightedRandomChoice(data.family_names), spousePlace.coordinates, spousePlace.fullAddress, spousePlace.addressParts);
 				generateGivenNamesForPerson(spouse, []);
 
 				sibling.spouse = spouse;
@@ -2851,7 +2831,6 @@
 				const sibMother = sibling.gender === 0 ? sibling : sibling.spouse;
 				const sibFather = sibling.gender === 1 ? sibling : sibling.spouse;
 
-				// 1. CHECK: If Mother died young, she cannot have children
 				if (sibMother.died) {
 					const ageAtDeath = calculateAge(sibMother.birthDate, sibMother.deathDate);
 					if (ageAtDeath < 18 * m) return;
@@ -2948,24 +2927,28 @@
 						} else {
 							let parentCoords = Math.random() < 0.5 ? sibMother.birthCoords : sibFather.birthCoords;
 							if (!parentCoords) parentCoords = sibMother.birthCoords || sibFather.birthCoords;
-							
+
 							let typePool = [];
-							for(const row of PLACE_ROWS) {
-								if(row.type === "place_of_birth" && row.data) typePool = typePool.concat(row.data);
+							for (const row of PLACE_ROWS) {
+								if (row.type === "place_of_birth" && row.data) typePool = typePool.concat(row.data);
 							}
-							
+
+							let childAddressParts = [];
 							let cityPlace = getParentCityPlace(parentCoords, typePool);
 							if (cityPlace) {
 								childPlace = cityPlace.name;
 								childCoords = cityPlace.coordinates;
-								childFullAddress = buildFullAddress(childCoords, typePool, false) || childPlace;
+								const addrObj = buildFullAddress(childCoords, typePool, false);
+								childFullAddress = addrObj.text || childPlace;
+								childAddressParts = addrObj.parts.length > 0 ? addrObj.parts : [childPlace.toUpperCase()];
 							} else {
 								const cpObj = pickPlace("place_of_birth", childBirthDate, parentCoords, sibMother.birthPlace);
 								childPlace = cpObj.name;
 								childCoords = cpObj.coordinates;
 								childFullAddress = cpObj.fullAddress || childPlace;
+								childAddressParts = cpObj.addressParts || [childPlace.toUpperCase()];
 							}
-							
+
 							if (isForeignPlace(childPlace)) {
 								inForeignTerritory = true;
 								childPlace = "INTER-NATIONAL";
@@ -2975,14 +2958,12 @@
 						}
 					}
 					previousPlace = childPlace;
-					
-					const child = createPerson(childGender, childBirthDate, childPlace, familyName, childCoords, childFullAddress);
 
-					// 3. ASSIGN PARENTS FIRST (Needed for death location logic)
+					const child = createPerson(childGender, childBirthDate, childPlace, familyName, childCoords, childFullAddress, childAddressParts);
+
 					child.mother = sibMother;
 					child.father = sibFather;
 
-					// 4. THEN APPLY DEATH LOGIC
 					applyDeathLogic(child, referenceDate);
 
 					generateGivenNamesForPerson(child, [], usedFirstNames);
@@ -3135,24 +3116,30 @@
 						} else {
 							let parentCoords = Math.random() < 0.5 ? mother.birthCoords : father.birthCoords;
 							if (!parentCoords) parentCoords = mother.birthCoords || father.birthCoords;
-							
-							let typePool = [];
-							for(const row of PLACE_ROWS) {
-								if(row.type === "place_of_birth" && row.data) typePool = typePool.concat(row.data);
+
+							let typePool = _getEffectiveTypePool("place_of_birth", dateToInteger(childBirthDate));
+							if (typePool.length === 0) {
+								for (const row of PLACE_ROWS) {
+									if (row.type === "place_of_birth" && row.data) typePool = typePool.concat(row.data);
+								}
 							}
-							
+
+							let childAddressParts = [];
 							let cityPlace = getParentCityPlace(parentCoords, typePool);
 							if (cityPlace) {
 								childPlace = cityPlace.name;
 								childCoords = cityPlace.coordinates;
-								childFullAddress = buildFullAddress(childCoords, typePool, false) || childPlace;
+								const addrObj = buildFullAddress(childCoords, typePool, false);
+								childFullAddress = addrObj.text || childPlace;
+								childAddressParts = addrObj.parts.length > 0 ? addrObj.parts : [childPlace.toUpperCase()];
 							} else {
 								const cpObj = pickPlace("place_of_birth", childBirthDate, parentCoords, mother.birthPlace);
 								childPlace = cpObj.name;
 								childCoords = cpObj.coordinates;
 								childFullAddress = cpObj.fullAddress || childPlace;
+								childAddressParts = cpObj.addressParts || [childPlace.toUpperCase()];
 							}
-							
+
 							if (isForeignPlace(childPlace)) {
 								inForeignTerritory = true;
 								childPlace = "INTER-NATIONAL";
@@ -3162,8 +3149,8 @@
 						}
 					}
 					previousChildPlace = childPlace;
-					
-					const child = createPerson(childGender, childBirthDate, childPlace, familyName, childCoords, childFullAddress);
+
+					const child = createPerson(childGender, childBirthDate, childPlace, familyName, childCoords, childFullAddress, childAddressParts);
 					child.mother = mother;
 					child.father = father;
 					generateGivenNamesForPerson(child, grandparents, usedFirstNames);
@@ -3176,9 +3163,8 @@
 				mother.children = children;
 				father.children = children;
 
-				// Link siblings together
 				for (const child of children) {
-					child.siblings = children.filter(c => c !== child);
+					child.siblings = children.filter((c) => c !== child);
 				}
 				return children;
 			}
@@ -3311,6 +3297,7 @@
 								gcPlace = fallbackObj.name;
 								gcCoords = fallbackObj.coordinates;
 								gcFullAddress = fallbackObj.fullAddress || gcPlace;
+								gcAddressParts = fallbackObj.addressParts || [gcPlace.toUpperCase()];
 								inForeignTerritory = false;
 							}
 						} else {
@@ -3318,7 +3305,8 @@
 							gcPlace = gcObj.name;
 							gcCoords = gcObj.coordinates;
 							gcFullAddress = gcObj.fullAddress || gcPlace;
-							
+							gcAddressParts = gcObj.addressParts || [gcPlace.toUpperCase()];
+
 							if (isForeignPlace(gcPlace)) {
 								inForeignTerritory = true;
 								gcPlace = "INTER-NATIONAL";
@@ -3327,9 +3315,13 @@
 							}
 						}
 					}
-					previousPlace = gcPlace;
+					let gcAddressParts = [];
+					if (inForeignTerritory) {
+						gcAddressParts = ["INTER-NATIONAL"];
+					} else if (gcPlace && gcCoords) {
+					}
 
-					const gc = createPerson(gcGender, gcBirthDate, gcPlace, familyName, gcCoords, gcFullAddress);
+					const gc = createPerson(gcGender, gcBirthDate, gcPlace, familyName, gcCoords, gcFullAddress, gcAddressParts);
 					gc.mother = gcMother;
 					gc.father = gcFather;
 					generateGivenNamesForPerson(gc, [], usedFirstNames);
@@ -3343,9 +3335,8 @@
 				gcMother.children = grandchildren;
 				gcFather.children = grandchildren;
 
-				// Link siblings together
 				for (const child of grandchildren) {
-					child.siblings = grandchildren.filter(c => c !== child);
+					child.siblings = grandchildren.filter((c) => c !== child);
 				}
 				return grandchildren;
 			}
@@ -3501,21 +3492,21 @@
 						} else {
 							if (mother && father && Math.random() < 0.3) {
 								birthPlace = Math.random() < 0.5 ? mother.birthPlace : father.birthPlace;
-								if(isForeignPlace(birthPlace)) {
+								if (isForeignPlace(birthPlace)) {
 									birthPlace = "INTER-NATIONAL";
 									fullBirthAddress = "INTER-NATIONAL";
 									birthCoords = null;
 								} else {
 									birthCoords = birthPlace === mother.birthPlace ? mother.birthCoords : father.birthCoords;
 									fullBirthAddress = birthPlace === mother.birthPlace ? mother._currentAddress?.name : father._currentAddress?.name;
-									if(!fullBirthAddress) fullBirthAddress = birthPlace;
+									if (!fullBirthAddress) fullBirthAddress = birthPlace;
 								}
 							} else {
-								const cpObj = pickPlace("place_of_birth", birthDate, anchorPerson.birthCoords || (mother? mother.birthCoords : null) || null);
+								const cpObj = pickPlace("place_of_birth", birthDate, anchorPerson.birthCoords || (mother ? mother.birthCoords : null) || null);
 								birthPlace = cpObj.name;
 								birthCoords = cpObj.coordinates;
 								fullBirthAddress = cpObj.fullAddress || birthPlace;
-								
+
 								if (isForeignPlace(birthPlace)) {
 									inForeignTerritory = true;
 									birthPlace = "INTER-NATIONAL";
@@ -3539,29 +3530,33 @@
 						return sib;
 					};
 
-					// --- FIXED DEATH LOGIC BLOCK ---
 					if (birthType === "single") {
 						const sib = createSiblingPerson(birthDate);
-						applyDeathLogic(sib, referenceDate); // Kill immediately
+						applyDeathLogic(sib, referenceDate);
 						siblings.push(sib);
 						birthDates.push(birthDate);
 					} else if (birthType === "twin") {
 						const sib1 = createSiblingPerson(birthDate);
 						let sib2Date = birthDate;
 						if (Math.random() < TWIN_DAY_DIFFERENCE_CHANCE) {
-							/* ... date logic ... */
+							const bd = parseDate(birthDate);
+							const nextDay = bd.day + 1;
+							const maxDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][bd.month - 1];
+							if (nextDay <= maxDays) {
+								sib2Date = formatDate(bd.year, bd.month, nextDay);
+							}
 						}
 						const sib2 = createSiblingPerson(sib2Date);
 
 						if (siblings.length + 2 <= siblingsNeeded) {
-							applyDeathLogic(sib1, referenceDate); // Kill sib1
-							applyDeathLogic(sib2, referenceDate); // Kill sib2
+							applyDeathLogic(sib1, referenceDate);
+							applyDeathLogic(sib2, referenceDate);
 							siblings.push(sib1);
 							siblings.push(sib2);
 							birthDates.push(birthDate);
 							if (sib2Date !== birthDate) birthDates.push(sib2Date);
 						} else if (siblings.length + 1 <= siblingsNeeded) {
-							applyDeathLogic(sib1, referenceDate); // Kill sib1
+							applyDeathLogic(sib1, referenceDate);
 							siblings.push(sib1);
 							birthDates.push(birthDate);
 						}
@@ -3573,12 +3568,11 @@
 						const triplets = [sib1, sib2, sib3].slice(0, toAdd);
 
 						for (const t of triplets) {
-							applyDeathLogic(t, referenceDate); // Kill the specific triplet
+							applyDeathLogic(t, referenceDate);
 							siblings.push(t);
 						}
 						birthDates.push(birthDate);
 					}
-					// --- END FIXED BLOCK ---
 				}
 
 				const allChildren = [anchorPerson, ...siblings];
@@ -3597,9 +3591,8 @@
 					father.children = allChildren;
 				}
 
-				// Link siblings together
 				for (const child of allChildren) {
-					child.siblings = allChildren.filter(c => c !== child);
+					child.siblings = allChildren.filter((c) => c !== child);
 				}
 
 				if (allowExSpouse && mother && father && allChildren.length >= 2 && Math.random() < EX_SPOUSE_CHANCE * 0.7) {
@@ -3619,7 +3612,7 @@
 
 			function generateGivenNamesForPerson(person, grandparents = [], forbiddenFirstNames = new Set()) {
 				const nameList = getNamesByGender(data.first_names, person.gender);
-				const isJP = document.getElementById("dataSelector").value === "jp.js"; // CHECK DATASET
+				const isJP = document.getElementById("dataSelector").value === "jp.js";
 				let names = [];
 				let usedNames = new Set();
 				const r = Math.random();
@@ -3687,8 +3680,8 @@
 				const motherAge = getMotherAgeAtBirth();
 				const motherBirthYear = personBirth.year - motherAge;
 				const motherBirthDate = generateRandomDateInYear(motherBirthYear);
-				const mObj = pickPlace("place_of_birth", motherBirthDate, person.birthCoords); 
-				const mother = createPerson(0, motherBirthDate, mObj.name, person.birthFamilyName || person.familyName, mObj.coordinates, mObj.fullAddress);
+				const mObj = pickPlace("place_of_birth", motherBirthDate, person.birthCoords);
+				const mother = createPerson(0, motherBirthDate, mObj.name, person.birthFamilyName || person.familyName, mObj.coordinates, mObj.fullAddress, mObj.addressParts);
 				mother.isAncestor = true;
 
 				let fatherAgeDiff = random(Math.round(-5 * m), Math.round(10 * m));
@@ -3697,8 +3690,8 @@
 				if (fatherBirthYear > maxFatherBirthYear) fatherBirthYear = maxFatherBirthYear;
 
 				const fatherBirthDate = generateRandomDateInYear(fatherBirthYear);
-				const fObj = pickPlace("place_of_birth", fatherBirthDate, person.birthCoords); 
-				const father = createPerson(1, fatherBirthDate, fObj.name, person.birthFamilyName || person.familyName, fObj.coordinates, fObj.fullAddress);
+				const fObj = pickPlace("place_of_birth", fatherBirthDate, person.birthCoords);
+				const father = createPerson(1, fatherBirthDate, fObj.name, person.birthFamilyName || person.familyName, fObj.coordinates, fObj.fullAddress, fObj.addressParts);
 				father.birthFamilyName = weightedRandomChoice(data.family_names);
 				father.isAncestor = true;
 				person.mother = mother;
@@ -3760,9 +3753,10 @@
 				const selfAge = random(Math.round(minVal * m), Math.round(maxVal * m));
 				const selfBirthYear = refDate.year - selfAge;
 				const selfBirthDate = generateRandomDateInYear(selfBirthYear, referenceDate);
-				const sObj = pickPlace("place_of_birth", selfBirthDate, null); const selfBirthPlace = sObj.name;
+				const sObj = pickPlace("place_of_birth", selfBirthDate, null);
+				const selfBirthPlace = sObj.name;
 				const selfFamilyName = weightedRandomChoice(data.family_names);
-				const self = createPerson(selfGender, selfBirthDate, selfBirthPlace, selfFamilyName, typeof sObj !== 'undefined' ? sObj.coordinates : null, typeof sObj !== 'undefined' ? sObj.fullAddress : selfBirthPlace);
+				const self = createPerson(selfGender, selfBirthDate, selfBirthPlace, selfFamilyName, typeof sObj !== "undefined" ? sObj.coordinates : null, typeof sObj !== "undefined" ? sObj.fullAddress : selfBirthPlace, typeof sObj !== "undefined" ? sObj.addressParts : []);
 				self.isAncestor = true;
 				generateAncestors(self, 1, upGenLimit, referenceDate);
 
@@ -3868,32 +3862,32 @@
 				const m = getMultiplier();
 				let allPeople = [];
 				function collect(p) {
-					if(!p || allPeople.includes(p)) return;
+					if (!p || allPeople.includes(p)) return;
 					allPeople.push(p);
-					if(p.mother) collect(p.mother);
-					if(p.father) collect(p.father);
-					if(p.spouse) collect(p.spouse);
-					if(p.exSpouses) p.exSpouses.forEach(ex=>collect(ex.exSpouse));
-					if(p.siblings) p.siblings.forEach(s=>collect(s));
-					if(p.children) p.children.forEach(c=>collect(c));
+					if (p.mother) collect(p.mother);
+					if (p.father) collect(p.father);
+					if (p.spouse) collect(p.spouse);
+					if (p.exSpouses) p.exSpouses.forEach((ex) => collect(ex.exSpouse));
+					if (p.siblings) p.siblings.forEach((s) => collect(s));
+					if (p.children) p.children.forEach((c) => collect(c));
 				}
 				collect(rootPerson);
-				
+
 				const refYear = parseDate(referenceDate).year;
 				let minYear = refYear;
-				for(const p of allPeople) {
+				for (const p of allPeople) {
 					const by = parseDate(p.birthDate).year;
-					if(by < minYear) minYear = by;
+					if (by < minYear) minYear = by;
 				}
-				
-				for(const p of allPeople) {
-					if(!p._currentAddress) {
-						// If child with parents, wait for the year loop to initialize from parents
+
+				for (const p of allPeople) {
+					if (!p._currentAddress) {
 						if ((p.mother || p.father) && !p.isAncestor) continue;
 
 						let addrName = p.birthPlace;
+						let addrParts = p.addressHistory && p.addressHistory.length > 0 ? p.addressHistory[0].parts : [addrName.toUpperCase()];
 						if (p.addressHistory && p.addressHistory.length > 0) addrName = p.addressHistory[0].address;
-						p._currentAddress = { name: addrName, coords: p.birthCoords };
+						p._currentAddress = { name: addrName, coords: p.birthCoords, parts: addrParts };
 						p._lastMoveYear = parseDate(p.birthDate).year;
 					}
 				}
@@ -3902,52 +3896,49 @@
 				const techYearInfo = parseInt(document.getElementById("technologyYearInput").value) || refYearInfo;
 				const techOffset = techYearInfo - refYearInfo;
 
-				for(let y = minYear; y <= refYear; y++) {
-					// Get urbanization for this year
+				for (let y = minYear; y <= refYear; y++) {
 					const techDateVal = (y + techOffset) * 10000 + 101;
 					let urb = _getEffectiveUrbanisation(techDateVal);
 					const urbancall = urb.urbancall || 0.1;
 
-					for(const p of allPeople) {
-						if(p.died) {
+					for (const p of allPeople) {
+						if (p.died) {
 							const dy = parseDate(p.deathDate).year;
-							if(y > dy) continue;
+							if (y > dy) continue;
 						}
 						const by = parseDate(p.birthDate).year;
-						if(y < by) continue;
-						
+						if (y < by) continue;
+
 						const age = y - by;
 
-						// Initialize child's starting address from parents at birth
 						if (!p._currentAddress && age === 0) {
-							const parent = p.mother && p.mother._currentAddress ? p.mother : (p.father && p.father._currentAddress ? p.father : null);
+							const parent = p.mother && p.mother._currentAddress ? p.mother : p.father && p.father._currentAddress ? p.father : null;
 							if (parent) {
 								p._currentAddress = parent._currentAddress;
 								p.birthPlace = p._currentAddress.name;
 								p.birthCoords = p._currentAddress.coords;
-								p.addressHistory = [{ date: p.birthDate || "", address: p._currentAddress.name }];
+								p._birthAddressParts = p._currentAddress.parts;
+								p.addressHistory = [{ date: p.birthDate || "", address: p._currentAddress.name, parts: p._currentAddress.parts }];
 								p._lastMoveYear = y;
 							} else {
-								// Fallback if parents not simulated or found
 								let addrName = p.birthPlace;
+								let addrParts = p.addressHistory && p.addressHistory.length > 0 ? p.addressHistory[0].parts : [addrName.toUpperCase()];
 								if (p.addressHistory && p.addressHistory.length > 0) addrName = p.addressHistory[0].address;
-								p._currentAddress = { name: addrName, coords: p.birthCoords };
+								p._currentAddress = { name: addrName, coords: p.birthCoords, parts: addrParts };
 								p._lastMoveYear = y;
 							}
 						}
-						
-						if (!p._currentAddress) continue; // Skip if still not initialized (should not happen if loop starts from minYear)
 
-						// Define leaving age range 12-24 based on urbancall
-						// Higher urbancall -> higher leaving age
+						if (!p._currentAddress) continue;
+
 						if (!p._leavingAge) {
 							const baseAge = 18;
-							const variance = Math.floor((urbancall * 12) - 3); // -3 to +9 range roughly
+							const variance = Math.floor(urbancall * 12 - 3);
 							p._leavingAge = (baseAge + variance + (Math.floor(Math.random() * 5) - 2)) * m;
 							p._leavingAge = Math.max(12 * m, Math.min(24 * m, p._leavingAge));
 						}
-						
-						if(age < p._leavingAge) {
+
+						if (age < p._leavingAge) {
 							let guardian = null;
 							const isAliveInYear = (person, year) => {
 								if (!person) return false;
@@ -3960,49 +3951,52 @@
 							} else if (p.father && isAliveInYear(p.father, y) && p.father._currentAddress) {
 								guardian = p.father;
 							} else if (p.siblings) {
-								// Follow oldest living sibling who is already moved or has an address
-								const olderSib = p.siblings.find(s => s._currentAddress && isAliveInYear(s, y) && (y - parseDate(s.birthDate).year >= (s._leavingAge || 18)));
+								const olderSib = p.siblings.find((s) => s._currentAddress && isAliveInYear(s, y) && y - parseDate(s.birthDate).year >= (s._leavingAge || 18));
 								if (olderSib) guardian = olderSib;
 							}
 
-							if(guardian && p._currentAddress && p._currentAddress.name !== guardian._currentAddress.name) {
+							if (guardian && p._currentAddress && p._currentAddress.name !== guardian._currentAddress.name) {
 								p._currentAddress = guardian._currentAddress;
-								if(!p.addressHistory) p.addressHistory = [];
-								p.addressHistory.push({ date: formatDate(y, 1, 1), address: p._currentAddress.name });
+								if (!p.addressHistory) p.addressHistory = [];
+								p.addressHistory.push({ date: formatDate(y, 1, 1), address: p._currentAddress.name, parts: p._currentAddress.parts });
 							}
 							continue;
 						}
 
-						if(p.spouse && !p.spouse.died && age >= p._leavingAge) {
-							if(p.gender === 0 && p._currentAddress && p.spouse._currentAddress && p._currentAddress.name !== p.spouse._currentAddress.name) {
-								if(Math.random() < 0.6) {
-									p._currentAddress = p.spouse._currentAddress; 
-									if(!p.addressHistory) p.addressHistory = [];
-									p.addressHistory.push({ date: formatDate(y, 1, 1), address: p._currentAddress.name });
-								}
+						if (age >= p._leavingAge && y - (p._lastMoveYear || by) >= 10 * m) {
+							let moveChance = Math.max(0, 0.08 - age * 0.0015);
+							if (p.spouse && !p.spouse.died) {
+								moveChance *= 0.3;
 							}
-						}
 
-						if(age >= p._leavingAge && y - (p._lastMoveYear || by) >= 10 * m) {
-							if(Math.random() < 0.1) { 
+							if (Math.random() < moveChance) {
 								const oldAddrName = p._currentAddress ? p._currentAddress.name : "";
 								let newPlaceObj = pickPlace("place_of_birth", formatDate(y, 1, 1), p._currentAddress ? p._currentAddress.coords : null);
-								
+
 								if (newPlaceObj.fullAddress !== oldAddrName) {
-									p._currentAddress = { name: newPlaceObj.fullAddress, coords: newPlaceObj.coordinates };
-									if(!p.addressHistory) p.addressHistory = [];
-									p.addressHistory.push({ date: formatDate(y, 1, 1), address: p._currentAddress.name });
+									p._currentAddress = { name: newPlaceObj.fullAddress, coords: newPlaceObj.coordinates, parts: newPlaceObj.addressParts };
+									if (!p.addressHistory) p.addressHistory = [];
+									p.addressHistory.push({ date: formatDate(y, 1, 1), address: p._currentAddress.name, parts: p._currentAddress.parts });
+									p._lastMoveYear = y;
+
+									if (p.spouse && !p.spouse.died) {
+										p.spouse._currentAddress = { name: p._currentAddress.name, coords: p._currentAddress.coords, parts: p._currentAddress.parts };
+										if (!p.spouse.addressHistory) p.spouse.addressHistory = [];
+										p.spouse.addressHistory.push({ date: formatDate(y, 1, 1), address: p._currentAddress.name, parts: p._currentAddress.parts });
+										p.spouse._lastMoveYear = y;
+									}
+								} else {
+									p._lastMoveYear = y;
 								}
-								p._lastMoveYear = y;
 							}
 						}
 					}
 				}
-				
-				for(const p of allPeople) {
-					if(p.died && p._currentAddress && !p.inMilitary && !p.deathFromInput) {
-						const parts = p._currentAddress.name.split(" ");
-						p.deathPlace = parts.length > 1 ? parts.slice(-2).join(" ") : parts[0];
+
+				for (const p of allPeople) {
+					if (p.died && p._currentAddress && !p.inMilitary && !p.deathFromInput) {
+						p.deathPlace = p._currentAddress.name;
+						p._deathAddressParts = p._currentAddress.parts;
 					}
 				}
 			}
@@ -4018,13 +4012,16 @@
 					formattedRefDate = "1935/01/01";
 				}
 				const displayBirthDate = getMaskedDate(person);
-				const formattedBirthPlace = applyHistoricalPlaceName(person.birthPlace, person.birthDate);
+				const birthParts = person.addressHistory && person.addressHistory[0] ? person.addressHistory[0].parts : person._birthAddressParts || [];
+				const formattedBirthPlace = applyHistoricalPlaceName(getShortPlace(birthParts), person.birthDate);
 				let result = `${person.familyName} , ${person.givenNames} born ${formattedBirthPlace} ${displayBirthDate}`;
 
 				let personEffectiveDeath = null;
 				if (person.died && (isDateBefore(person.deathDate, formattedRefDate) || person.deathDate === formattedRefDate)) {
 					personEffectiveDeath = person.deathDate;
-					const formattedDeathPlace = applyHistoricalPlaceName(person.deathPlace, person.deathDate);
+
+					const deathParts = person._currentAddress ? person._currentAddress.parts : person._deathAddressParts || [];
+					const formattedDeathPlace = applyHistoricalPlaceName(getShortPlace(deathParts), person.deathDate);
 					if (person.inMilitary) {
 						result += ` died IN MILITARY-SERVICE IN ${formattedDeathPlace} ${person.deathDate}`;
 					} else {
@@ -4053,7 +4050,8 @@
 				if (showExSpouse && person.exSpouses && person.exSpouses.length > 0) {
 					for (const exInfo of person.exSpouses) {
 						const ex = exInfo.exSpouse;
-						const formattedExSpouseBirthPlace = applyHistoricalPlaceName(ex.birthPlace, ex.birthDate);
+						const exBirthParts = ex.addressHistory && ex.addressHistory[0] ? ex.addressHistory[0].parts : ex._birthAddressParts || [];
+						const formattedExSpouseBirthPlace = applyHistoricalPlaceName(getShortPlace(exBirthParts), ex.birthDate);
 						const exDispDate = getMaskedDate(ex);
 
 						result += ` , ex-spouse : ${ex.givenNames} ${exDispDate} ${formattedExSpouseBirthPlace}`;
@@ -4061,16 +4059,19 @@
 				}
 
 				if (person.spouse && showSpouse) {
-					const formattedSpouseBirthPlace = applyHistoricalPlaceName(person.spouse.birthPlace, person.spouse.birthDate);
-					const spDispDate = getMaskedDate(person.spouse);
+					const sp = person.spouse;
+					const spBirthParts = sp.addressHistory && sp.addressHistory[0] ? sp.addressHistory[0].parts : sp._birthAddressParts || [];
+					const formattedSpouseBirthPlace = applyHistoricalPlaceName(getShortPlace(spBirthParts), sp.birthDate);
+					const spDispDate = getMaskedDate(sp);
 
-					result += ` , spouse : ${person.spouse.givenNames} ${spDispDate} ${formattedSpouseBirthPlace}`;
+					result += ` , spouse : ${sp.givenNames} ${spDispDate} ${formattedSpouseBirthPlace}`;
 				}
 
 				if (showChildren && Array.isArray(person.children) && person.children.length > 0) {
 					const childrenStr = person.children
 						.map((c) => {
-							const formattedChildBirthPlace = applyHistoricalPlaceName(c.birthPlace, c.birthDate);
+							const cBirthParts = c.addressHistory && c.addressHistory[0] ? c.addressHistory[0].parts : c._birthAddressParts || [];
+							const formattedChildBirthPlace = applyHistoricalPlaceName(getShortPlace(cBirthParts), c.birthDate);
 							const cDispDate = getMaskedDate(c);
 
 							let childStr = `${c.givenNames} ${formattedChildBirthPlace} ${cDispDate}`;
@@ -4078,7 +4079,8 @@
 							let childEffectiveDeath = null;
 							if (c.died && (isDateBefore(c.deathDate, formattedRefDate) || c.deathDate === formattedRefDate)) {
 								childEffectiveDeath = c.deathDate;
-								const formattedChildDeathPlace = applyHistoricalPlaceName(c.deathPlace, c.deathDate);
+								const cDeathParts = c._currentAddress ? c._currentAddress.parts : c._deathAddressParts || [];
+								const formattedChildDeathPlace = applyHistoricalPlaceName(getShortPlace(cDeathParts), c.deathDate);
 								if (c.inMilitary) {
 									childStr += ` died IN MILITARY-SERVICE IN ${formattedChildDeathPlace} ${c.deathDate}`;
 								} else {
@@ -4612,7 +4614,7 @@
 
 			function generateGivenNames(gender, parentNames = [], inheritChance = 0.5, forbiddenFirstNames = new Set()) {
 				const nameList = getNamesByGender(data.first_names, gender);
-				const isJP = document.getElementById("dataSelector").value === "jp.js"; // CHECK DATASET
+				const isJP = document.getElementById("dataSelector").value === "jp.js";
 				if (isJP) {
 					inheritChance = 0;
 					if (parentNames && parentNames.length > 0) {
@@ -4712,8 +4714,6 @@
 				const localityStrength = anchorPlaceInput && localityStrengthInput ? parseInt(localityStrengthInput.value) : 0;
 				const anchorPlace = anchorPlaceInput ? anchorPlaceInput.value.trim() : "";
 				const stationary = stationaryInput ? stationaryInput.checked : false;
-
-
 
 				if (deathDateInput && deathDateInput.value.trim().length === 8) {
 					const dVal = deathDateInput.value.trim();
@@ -4926,7 +4926,7 @@
 									tempChildren.push({
 										names: childNames,
 										date: childBirthDate,
-										gender: childGender
+										gender: childGender,
 									});
 								}
 							}
@@ -4970,12 +4970,12 @@
 								if (i === 0) {
 									let parentCoords = Math.random() < 0.5 ? placeOfBirthCoords : mockRoot.spouse.birthCoords;
 									if (!parentCoords) parentCoords = placeOfBirthCoords || mockRoot.spouse.birthCoords;
-									
+
 									let typePool = [];
-									for(const row of PLACE_ROWS) {
-										if(row.type === "place_of_birth" && row.data) typePool = typePool.concat(row.data);
+									for (const row of PLACE_ROWS) {
+										if (row.type === "place_of_birth" && row.data) typePool = typePool.concat(row.data);
 									}
-									
+
 									let cityPlace = getParentCityPlace(parentCoords, typePool);
 									if (cityPlace) {
 										childPlace = cityPlace.name;
@@ -4989,8 +4989,8 @@
 								} else {
 									if (Math.random() < 0.2) {
 										let typePool = [];
-										for(const row of PLACE_ROWS) {
-											if(row.type === "place_of_birth" && row.data) typePool = typePool.concat(row.data);
+										for (const row of PLACE_ROWS) {
+											if (row.type === "place_of_birth" && row.data) typePool = typePool.concat(row.data);
 										}
 										let cityPlace = getParentCityPlace(placeOfBirthCoords, typePool);
 										if (cityPlace) {
@@ -5012,7 +5012,7 @@
 							}
 
 							previousChildPlace = childPlace;
-							if(!mockRoot.children) mockRoot.children = [];
+							if (!mockRoot.children) mockRoot.children = [];
 							mockRoot.children.push(createPerson(tempChildren[i].gender, tempChildren[i].date, childPlace, familyName, childCoords, fullChildAddress));
 							mockRoot.children[mockRoot.children.length - 1].tempNames = tempChildren[i].names;
 						}
@@ -5021,9 +5021,9 @@
 					placeOfBirth = anchorPlace;
 					result = result.replace(formattedPlaceOfBirth, applyHistoricalPlaceName(placeOfBirth, birthDateStr));
 				}
-				
+
 				simulateMigration(mockRoot, formatDate(referenceDate.year, referenceDate.month, referenceDate.day));
-				
+
 				if (isMarried) {
 					if (mockRoot.spouse.addressHistory && mockRoot.spouse.addressHistory.length > 0) {
 						mockRoot.spouseStr += `<span class="address-history">${formatAddressList(mockRoot.spouse.addressHistory)}</span>`;
@@ -5044,18 +5044,17 @@
 					}
 				}
 
-				if(mockRoot.addressHistory && mockRoot.addressHistory.length > 0) {
-					const addrStrItems = mockRoot.addressHistory.map(a => a.date + " " + a.address);
+				if (mockRoot.addressHistory && mockRoot.addressHistory.length > 0) {
+					const addrStrItems = mockRoot.addressHistory.map((a) => a.date + " " + a.address);
 					result += `<span class="address-history">${formatAddressList(addrStrItems)}</span>`;
 				}
-				
+
 				const bYear = parseDate(birthDateStr).year;
 				const prob = getMaskProbability(bYear);
 				const shouldMask = Math.random() < prob;
 
 				if (shouldMask) {
 					const applyPadding = (str) => {
-						// Matches YYYY/MM/DD and captures optional A.C. suffix
 						return str.replace(/(\d{4})\/(\d{2})\/(\d{2})(\sA\.C\.)?/g, (match, y, m, d, ac) => {
 							return `${y}/07/01${ac || ""}`;
 						});
