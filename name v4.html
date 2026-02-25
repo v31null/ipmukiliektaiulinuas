@@ -391,6 +391,10 @@
 						<input type="checkbox" id="showAddressChanges" style="width: 20px; height: 20px" />
 						<label for="showAddressChanges">SHOW ADRESS CHANGES</label>
 					</div>
+					<div style="display: flex; flex-wrap: nowrap; flex-direction: row; align-content: flex-start; justify-content: center; align-items: center">
+						<input type="checkbox" id="patriarchyToggle" style="width: 20px; height: 20px" />
+						<label for="patriarchyToggle">SWITCH TO PATRIARCHY</label>
+					</div>
 				</div>
 			</div>
 			<br />
@@ -625,22 +629,44 @@
 			}
 
 			const _PLACE_SEPARATORS = ["/", "-", ".", "(", "//"];
-			function applyHistoricalPlaceName(rawPlaceName, birthDate) {
-				if (!rawPlaceName || !birthDate) return rawPlaceName || "";
+			function applyHistoricalPlaceName(rawPlaceName, eventDateStr, acqDateStr = null) {
+				if (!rawPlaceName || !eventDateStr) return rawPlaceName || "";
 				const upper = rawPlaceName.toUpperCase();
 				const eraes = readNameEraesFromTable();
 				if (!eraes || eraes.length === 0) return upper;
-				const birth = parseDate(birthDate);
-				const birthDays = birth.year * 365.2425 + birth.month * 30.4375 + birth.day;
-				let eraName = null;
-				for (const era of eraes) {
-					const eraDays = era.lastYear * 365.2425 + era.lastMonth * 30.4375 + era.lastDay;
-					if (birthDays < eraDays) {
-						eraName = era.namen;
+
+				const eventD = parseDate(eventDateStr);
+				const eventDays = eventD.year * 365.2425 + eventD.month * 30.4375 + eventD.day;
+
+				let eventEraIdx = -1;
+				for (let i = 0; i < eraes.length; i++) {
+					const eraDays = eraes[i].lastYear * 365.2425 + eraes[i].lastMonth * 30.4375 + eraes[i].lastDay;
+					if (eventDays < eraDays) {
+						eventEraIdx = i;
 						break;
 					}
 				}
-				if (!eraName) return upper;
+
+				if (eventEraIdx === -1) return upper;
+
+				let eraName = eraes[eventEraIdx].namen;
+
+				const effectiveAcqDate = acqDateStr || eventDateStr;
+				const acqD = parseDate(effectiveAcqDate);
+				const acqDays = acqD.year * 365.2425 + acqD.month * 30.4375 + acqD.day;
+				let acqEraIdx = -1;
+				for (let i = 0; i < eraes.length; i++) {
+					const eraDays = eraes[i].lastYear * 365.2425 + eraes[i].lastMonth * 30.4375 + eraes[i].lastDay;
+					if (acqDays < eraDays) {
+						acqEraIdx = i;
+						break;
+					}
+				}
+
+				if (acqEraIdx !== eventEraIdx) {
+					eraName = "NA";
+				}
+
 				const sep = _PLACE_SEPARATORS[Math.floor(Math.random() * _PLACE_SEPARATORS.length)];
 				if (sep === "(") return upper + "(" + eraName + ")";
 				return upper + sep + eraName;
@@ -1749,8 +1775,11 @@
 				return Math.floor(Math.random() * (max - min + 1)) + min;
 			}
 
-			function getNamesByGender(nameArray, gender) {
-				return nameArray.filter((n) => n.gender === gender);
+
+function getNamesByGender(nameArray, gender) {
+				const tog = document.getElementById("patriarchyToggle");
+				const effectiveGender = (tog && tog.checked) ? (gender === 1 ? 0 : 1) : gender;
+				return nameArray.filter((n) => n.gender === effectiveGender);
 			}
 
 			function weightedRandomChoice(array) {
@@ -1772,6 +1801,7 @@
 				const processedItems = items.map((item) => {
 					const datePart = item.date;
 					const addrPart = item.address;
+					if (!datePart || !addrPart) return null;
 					const d = parseDate(datePart);
 					const prob = getMaskProbability(d.year);
 
@@ -1783,7 +1813,7 @@
 					const isACMatch = displayDate.includes(" A.C.");
 					const cleanDigits = displayDate.replace(/\d{4}\/\d{2}\/\d{2}/, (m) => m.replace(/\//g, "")).substring(0, 8);
 					return cleanDigits + (isACMatch ? " A.C." : "") + " " + addrPart;
-				});
+				}).filter(Boolean);
 
 				if (processedItems.length === 1) return " — " + processedItems[0];
 				if (processedItems.length === 2) return " — " + processedItems[0] + " & " + processedItems[1];
@@ -1796,6 +1826,31 @@
 				const dLon = ((lon2 - lon1) * Math.PI) / 180;
 				const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
 				return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+			}
+
+			function _getEraIndex(yearInt, monthInt = 1, dayInt = 1) {
+				const eraes = readNameEraesFromTable();
+				if (!eraes || eraes.length === 0) return 0;
+				const totalDays = yearInt * 365.2425 + monthInt * 30.4375 + dayInt;
+				for (let i = 0; i < eraes.length; i++) {
+					const eraDays = eraes[i].lastYear * 365.2425 + eraes[i].lastMonth * 30.4375 + eraes[i].lastDay;
+					if (totalDays < eraDays) return i;
+				}
+				return eraes.length;
+			}
+
+			function _isSameLocation(oldAddr, newAddr) {
+				if (!oldAddr || !newAddr || !oldAddr.coords || !newAddr.coordinates) return false;
+				const d = haversineDistance(oldAddr.coords[0], oldAddr.coords[1], newAddr.coordinates[0], newAddr.coordinates[1]);
+				if (d > 2.0) return false;
+
+				const n1 = (oldAddr.parts && oldAddr.parts[0]) || oldAddr.name.split(/[\/\-\.\(\)]/)[0];
+				const n2 = (newAddr.addressParts && newAddr.addressParts[0]) || newAddr.name.split(/[\/\-\.\(\)]/)[0];
+
+				if (!n1 || !n2) return false;
+				const s1 = n1.trim().toUpperCase();
+				const s2 = n2.trim().toUpperCase();
+				return s1 === s2 || s1.includes(s2) || s2.includes(s1);
 			}
 
 			function buildFullAddress(coords, pool, militaryLevelOnly = false) {
@@ -1875,16 +1930,16 @@
 				for (const row of PLACE_ROWS) {
 					if (row.type === type && row.data) {
 						const start = dateToInteger(row.start);
-						let end = row.end ? dateToInteger(row.end) : 20001230;
+						let end = row.end ? dateToInteger(row.end) : 99991230;
 						if (!row.end) {
-							let nextStart = 20001230;
+							let nextStart = 99991230;
 							for (const r2 of PLACE_ROWS) {
 								if (r2.type === type && r2.start) {
 									const s2 = dateToInteger(r2.start);
 									if (s2 > start && s2 < nextStart) nextStart = s2;
 								}
 							}
-							if (nextStart !== 20001230) end = dateIntSubtractOneDay(nextStart);
+							if (nextStart !== 99991230) end = dateIntSubtractOneDay(nextStart);
 						}
 						if (dateVal >= start && dateVal <= end) {
 							pool = pool.concat(row.data);
@@ -1921,8 +1976,35 @@
 
 				const anchorFallback = fallbackName || document.getElementById("anchorPlaceInput").value || "UNBEKANNT";
 				if (candidates.length === 0) {
+					// Fallback: pick only the CLOSEST era (highest start ≤ dateVal).
+					// Do NOT merge all eras — that would mix Seljuk/Ottoman into Republic dates.
+					let bestRow = null;
+					let bestStart = -Infinity;
 					for (const row of PLACE_ROWS) {
-						if (row.type === type && row.data) candidates = candidates.concat(row.data);
+						if (row.type === type && row.data && row.data.length > 0) {
+							const s = dateToInteger(row.start);
+							if (s <= dateVal && s >= bestStart) {
+								bestStart = s;
+								bestRow = row;
+							}
+						}
+					}
+					if (bestRow) {
+						candidates = bestRow.data;
+					} else {
+						// No era starts before dateVal — use the earliest available era.
+						let earliestRow = null;
+						let earliestStart = Infinity;
+						for (const row of PLACE_ROWS) {
+							if (row.type === type && row.data && row.data.length > 0) {
+								const s = dateToInteger(row.start);
+								if (s < earliestStart) {
+									earliestStart = s;
+									earliestRow = row;
+								}
+							}
+						}
+						if (earliestRow) candidates = earliestRow.data;
 					}
 				}
 
@@ -1993,8 +2075,26 @@
 				const dv = dateToInteger(dateStr);
 				let typePool = _getEffectiveTypePool(type, dv);
 				if (typePool.length === 0) {
+					// Same closest-era fallback — do not mix all eras.
+					let bestRow = null;
+					let bestStart = -Infinity;
 					for (const row of PLACE_ROWS) {
-						if (row.type === type && row.data) typePool = typePool.concat(row.data);
+						if (row.type === type && row.data && row.data.length > 0) {
+							const s = dateToInteger(row.start);
+							if (s <= dv && s >= bestStart) { bestStart = s; bestRow = row; }
+						}
+					}
+					if (bestRow) {
+						typePool = bestRow.data;
+					} else {
+						let earliestRow = null, earliestStart = Infinity;
+						for (const row of PLACE_ROWS) {
+							if (row.type === type && row.data && row.data.length > 0) {
+								const s = dateToInteger(row.start);
+								if (s < earliestStart) { earliestStart = s; earliestRow = row; }
+							}
+						}
+						if (earliestRow) typePool = earliestRow.data;
 					}
 				}
 
@@ -2019,8 +2119,8 @@
 				return multInput ? parseFloat(multInput.value) || 1.0 : 1.0;
 			}
 			function parseDate(dateStr) {
-				const isAC = dateStr.includes("A.C.");
-				const clean = dateStr.replace(/\//g, "").replace(" A.C.", "").trim();
+				const isAC = String(dateStr).includes("A.C.");
+				const clean = String(dateStr).replace(/\//g, "").replace(" A.C.", "").trim();
 
 				let year = parseInt(clean.substring(0, clean.length - 4));
 				const month = parseInt(clean.substring(clean.length - 4, clean.length - 2));
@@ -2903,6 +3003,7 @@
 					let childPlace;
 					let childCoords = null;
 					let childFullAddress = "";
+					let childAddressParts = [];
 
 					if (previousPlace && Math.random() < 0.9) {
 						childPlace = previousPlace;
@@ -2922,6 +3023,7 @@
 								childPlace = fallbackObj.name;
 								childCoords = fallbackObj.coordinates;
 								childFullAddress = fallbackObj.fullAddress || childPlace;
+								childAddressParts = fallbackObj.addressParts || [childPlace.toUpperCase()];
 								inForeignTerritory = false;
 							}
 						} else {
@@ -2933,7 +3035,6 @@
 								if (row.type === "place_of_birth" && row.data) typePool = typePool.concat(row.data);
 							}
 
-							let childAddressParts = [];
 							let cityPlace = getParentCityPlace(parentCoords, typePool);
 							if (cityPlace) {
 								childPlace = cityPlace.name;
@@ -3092,6 +3193,7 @@
 					let childPlace;
 					let childCoords = null;
 					let childFullAddress = "";
+					let childAddressParts = [];
 
 					if (previousChildPlace && Math.random() < 0.9) {
 						childPlace = previousChildPlace;
@@ -3111,20 +3213,34 @@
 								childPlace = fallbackObj.name;
 								childCoords = fallbackObj.coordinates;
 								childFullAddress = fallbackObj.fullAddress || childPlace;
+								childAddressParts = fallbackObj.addressParts || [childPlace.toUpperCase()];
 								inForeignTerritory = false;
 							}
 						} else {
 							let parentCoords = Math.random() < 0.5 ? mother.birthCoords : father.birthCoords;
 							if (!parentCoords) parentCoords = mother.birthCoords || father.birthCoords;
 
-							let typePool = _getEffectiveTypePool("place_of_birth", dateToInteger(childBirthDate));
+							const _dv3 = dateToInteger(childBirthDate);
+							let typePool = _getEffectiveTypePool("place_of_birth", _dv3);
 							if (typePool.length === 0) {
+								let bestRow3 = null, bestStart3 = -Infinity;
 								for (const row of PLACE_ROWS) {
-									if (row.type === "place_of_birth" && row.data) typePool = typePool.concat(row.data);
+									if (row.type === "place_of_birth" && row.data && row.data.length > 0) {
+										const s = dateToInteger(row.start);
+										if (s <= _dv3 && s > bestStart3) { bestStart3 = s; bestRow3 = row; }
+									}
 								}
+								if (!bestRow3) {
+									let earliestStart3 = Infinity;
+									for (const row of PLACE_ROWS) {
+										if (row.type === "place_of_birth" && row.data && row.data.length > 0) {
+											const s = dateToInteger(row.start);
+											if (s < earliestStart3) { earliestStart3 = s; bestRow3 = row; }
+										}
+									}
+								}
+								if (bestRow3) typePool = bestRow3.data;
 							}
-
-							let childAddressParts = [];
 							let cityPlace = getParentCityPlace(parentCoords, typePool);
 							if (cityPlace) {
 								childPlace = cityPlace.name;
@@ -3909,6 +4025,26 @@
 						const by = parseDate(p.birthDate).year;
 						if (y < by) continue;
 
+						// ERA CONTINUITY CHECK
+						const bDate = parseDate(p.birthDate);
+						const lastCheckDate = p._lastMoveYear ? { year: p._lastMoveYear, month: 1, day: 1 } : bDate;
+						const lastEraIdx = _getEraIndex(lastCheckDate.year, lastCheckDate.month, lastCheckDate.day);
+						const currentEraIdx = _getEraIndex(y, 1, 1);
+
+						if (currentEraIdx !== lastEraIdx && p._currentAddress) {
+							// Try to upgrade to the same place in the new era
+							let replacement = pickPlace("place_of_birth", formatDate(y, 1, 1), p._currentAddress.coords);
+							if (_isSameLocation(p._currentAddress, replacement)) {
+								p._currentAddress = { name: replacement.fullAddress, coords: replacement.coordinates, parts: replacement.addressParts };
+								p._lastMoveYear = y;
+								if (!p.addressHistory) p.addressHistory = [];
+								p.addressHistory.push({ date: formatDate(y, 1, 1), address: p._currentAddress.name, parts: p._currentAddress.parts });
+							} else {
+								// No local replacement, they stay in the old set (meaning they'll show NA later)
+								p._lastMoveYear = y; // mark as checked for this era
+							}
+						}
+
 						const age = y - by;
 
 						if (!p._currentAddress && age === 0) {
@@ -4021,7 +4157,8 @@
 					personEffectiveDeath = person.deathDate;
 
 					const deathParts = person._currentAddress ? person._currentAddress.parts : person._deathAddressParts || [];
-					const formattedDeathPlace = applyHistoricalPlaceName(getShortPlace(deathParts), person.deathDate);
+					const deathAcqDate = (person.addressHistory && person.addressHistory.length > 0) ? person.addressHistory[person.addressHistory.length - 1].date : person.birthDate;
+					const formattedDeathPlace = applyHistoricalPlaceName(getShortPlace(deathParts), person.deathDate, deathAcqDate);
 					if (person.inMilitary) {
 						result += ` died IN MILITARY-SERVICE IN ${formattedDeathPlace} ${person.deathDate}`;
 					} else {
@@ -4080,7 +4217,8 @@
 							if (c.died && (isDateBefore(c.deathDate, formattedRefDate) || c.deathDate === formattedRefDate)) {
 								childEffectiveDeath = c.deathDate;
 								const cDeathParts = c._currentAddress ? c._currentAddress.parts : c._deathAddressParts || [];
-								const formattedChildDeathPlace = applyHistoricalPlaceName(getShortPlace(cDeathParts), c.deathDate);
+								const cDeathAcqDate = (c.addressHistory && c.addressHistory.length > 0) ? c.addressHistory[c.addressHistory.length - 1].date : c.birthDate;
+								const formattedChildDeathPlace = applyHistoricalPlaceName(getShortPlace(cDeathParts), c.deathDate, cDeathAcqDate);
 								if (c.inMilitary) {
 									childStr += ` died IN MILITARY-SERVICE IN ${formattedChildDeathPlace} ${c.deathDate}`;
 								} else {
@@ -4719,19 +4857,6 @@
 					const dVal = deathDateInput.value.trim();
 					if (/^\d{8}$/.test(dVal)) {
 						referenceDate = parseDate(dVal);
-						let dPlace = deathPlaceInput && deathPlaceInput.value.trim() ? deathPlaceInput.value.trim() : "UNKNOWN";
-
-						if (stationary) {
-							dPlace = anchorPlace;
-						}
-
-						const formattedDDate = formatDate(referenceDate.year, referenceDate.month, referenceDate.day);
-						const formattedDPlace = applyHistoricalPlaceName(dPlace, formattedDDate);
-						if (inMilitaryInput && inMilitaryInput.checked) {
-							customDeathStr = ` died IN MILITARY-SERVICE IN ${formattedDPlace} ${formattedDDate}`;
-						} else {
-							customDeathStr = ` died ${formattedDPlace} ${formattedDDate}`;
-						}
 					}
 				}
 
@@ -4742,6 +4867,23 @@
 				const maxDay = maxDayList[birthMonth - 1];
 				const birthDay = random(1, maxDay);
 				const birthDateStr = formatDate(birthYear, birthMonth, birthDay);
+
+				if (deathDateInput && deathDateInput.value.trim().length === 8) {
+					const dVal = deathDateInput.value.trim();
+					if (/^\d{8}$/.test(dVal)) {
+						let dPlace = deathPlaceInput && deathPlaceInput.value.trim() ? deathPlaceInput.value.trim() : "UNKNOWN";
+						if (stationary) {
+							dPlace = anchorPlace;
+						}
+						const formattedDDate = formatDate(referenceDate.year, referenceDate.month, referenceDate.day);
+						const formattedDPlace = applyHistoricalPlaceName(dPlace, formattedDDate, stationary ? birthDateStr : formattedDDate);
+						if (inMilitaryInput && inMilitaryInput.checked) {
+							customDeathStr = ` died IN MILITARY-SERVICE IN ${formattedDPlace} ${formattedDDate}`;
+						} else {
+							customDeathStr = ` died ${formattedDPlace} ${formattedDDate}`;
+						}
+					}
+				}
 
 				let placeOfBirth;
 				let placeOfBirthCoords = null;
