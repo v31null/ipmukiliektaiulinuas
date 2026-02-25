@@ -558,6 +558,16 @@
 			});
 		</script>
 		<script>
+			function getLabel(key) {
+				const tog = document.getElementById("patriarchyToggle");
+				const isP = tog && tog.checked;
+				if (key === "MOTHER") return isP ? "FATHER" : "MOTHER";
+				if (key === "FATHER") return isP ? "MOTHER" : "FATHER";
+				if (key === "mother") return isP ? "father" : "mother";
+				if (key === "father") return isP ? "mother" : "father";
+				return key;
+			}
+
 			function calculateDetailedAge(birthDate, currentDate, divisor = 1) {
 				const b = parseDate(birthDate);
 				const c = parseDate(currentDate);
@@ -1775,10 +1785,9 @@
 				return Math.floor(Math.random() * (max - min + 1)) + min;
 			}
 
-
-function getNamesByGender(nameArray, gender) {
+			function getNamesByGender(nameArray, gender) {
 				const tog = document.getElementById("patriarchyToggle");
-				const effectiveGender = (tog && tog.checked) ? (gender === 1 ? 0 : 1) : gender;
+				const effectiveGender = tog && tog.checked ? (gender === 1 ? 0 : 1) : gender;
 				return nameArray.filter((n) => n.gender === effectiveGender);
 			}
 
@@ -1798,22 +1807,24 @@ function getNamesByGender(nameArray, gender) {
 			function formatAddressList(items) {
 				if (!items || items.length === 0) return "";
 
-				const processedItems = items.map((item) => {
-					const datePart = item.date;
-					const addrPart = item.address;
-					if (!datePart || !addrPart) return null;
-					const d = parseDate(datePart);
-					const prob = getMaskProbability(d.year);
+				const processedItems = items
+					.map((item) => {
+						const datePart = item.date;
+						const addrPart = item.address;
+						if (!datePart || !addrPart) return null;
+						const d = parseDate(datePart);
+						const prob = getMaskProbability(d.year);
 
-					let displayDate = datePart;
-					if (Math.random() < prob) {
-						displayDate = formatDate(d.year, 7, 1);
-					}
+						let displayDate = datePart;
+						if (Math.random() < prob) {
+							displayDate = formatDate(d.year, 7, 1);
+						}
 
-					const isACMatch = displayDate.includes(" A.C.");
-					const cleanDigits = displayDate.replace(/\d{4}\/\d{2}\/\d{2}/, (m) => m.replace(/\//g, "")).substring(0, 8);
-					return cleanDigits + (isACMatch ? " A.C." : "") + " " + addrPart;
-				}).filter(Boolean);
+						const isACMatch = displayDate.includes(" A.C.");
+						const cleanDigits = displayDate.replace(/\d{4}\/\d{2}\/\d{2}/, (m) => m.replace(/\//g, "")).substring(0, 8);
+						return cleanDigits + (isACMatch ? " A.C." : "") + " " + addrPart;
+					})
+					.filter(Boolean);
 
 				if (processedItems.length === 1) return " — " + processedItems[0];
 				if (processedItems.length === 2) return " — " + processedItems[0] + " & " + processedItems[1];
@@ -2081,17 +2092,24 @@ function getNamesByGender(nameArray, gender) {
 					for (const row of PLACE_ROWS) {
 						if (row.type === type && row.data && row.data.length > 0) {
 							const s = dateToInteger(row.start);
-							if (s <= dv && s >= bestStart) { bestStart = s; bestRow = row; }
+							if (s <= dv && s >= bestStart) {
+								bestStart = s;
+								bestRow = row;
+							}
 						}
 					}
 					if (bestRow) {
 						typePool = bestRow.data;
 					} else {
-						let earliestRow = null, earliestStart = Infinity;
+						let earliestRow = null,
+							earliestStart = Infinity;
 						for (const row of PLACE_ROWS) {
 							if (row.type === type && row.data && row.data.length > 0) {
 								const s = dateToInteger(row.start);
-								if (s < earliestStart) { earliestStart = s; earliestRow = row; }
+								if (s < earliestStart) {
+									earliestStart = s;
+									earliestRow = row;
+								}
 							}
 						}
 						if (earliestRow) typePool = earliestRow.data;
@@ -3223,11 +3241,15 @@ function getNamesByGender(nameArray, gender) {
 							const _dv3 = dateToInteger(childBirthDate);
 							let typePool = _getEffectiveTypePool("place_of_birth", _dv3);
 							if (typePool.length === 0) {
-								let bestRow3 = null, bestStart3 = -Infinity;
+								let bestRow3 = null,
+									bestStart3 = -Infinity;
 								for (const row of PLACE_ROWS) {
 									if (row.type === "place_of_birth" && row.data && row.data.length > 0) {
 										const s = dateToInteger(row.start);
-										if (s <= _dv3 && s > bestStart3) { bestStart3 = s; bestRow3 = row; }
+										if (s <= _dv3 && s > bestStart3) {
+											bestStart3 = s;
+											bestRow3 = row;
+										}
 									}
 								}
 								if (!bestRow3) {
@@ -3235,7 +3257,10 @@ function getNamesByGender(nameArray, gender) {
 									for (const row of PLACE_ROWS) {
 										if (row.type === "place_of_birth" && row.data && row.data.length > 0) {
 											const s = dateToInteger(row.start);
-											if (s < earliestStart3) { earliestStart3 = s; bestRow3 = row; }
+											if (s < earliestStart3) {
+												earliestStart3 = s;
+												bestRow3 = row;
+											}
 										}
 									}
 								}
@@ -4157,7 +4182,7 @@ function getNamesByGender(nameArray, gender) {
 					personEffectiveDeath = person.deathDate;
 
 					const deathParts = person._currentAddress ? person._currentAddress.parts : person._deathAddressParts || [];
-					const deathAcqDate = (person.addressHistory && person.addressHistory.length > 0) ? person.addressHistory[person.addressHistory.length - 1].date : person.birthDate;
+					const deathAcqDate = person.addressHistory && person.addressHistory.length > 0 ? person.addressHistory[person.addressHistory.length - 1].date : person.birthDate;
 					const formattedDeathPlace = applyHistoricalPlaceName(getShortPlace(deathParts), person.deathDate, deathAcqDate);
 					if (person.inMilitary) {
 						result += ` died IN MILITARY-SERVICE IN ${formattedDeathPlace} ${person.deathDate}`;
@@ -4167,19 +4192,26 @@ function getNamesByGender(nameArray, gender) {
 				}
 
 				if (showParents) {
+					const isP = document.getElementById("patriarchyToggle") && document.getElementById("patriarchyToggle").checked;
 					if (person.mother && person.father) {
-						const motherName = person.motherIsBureau ? getBureauName(person.birthDate) : person.mother.givenNames;
-						const fatherName = person.fatherIsBureau ? getBureauName(person.birthDate) : person.father.givenNames;
+						const mName = person.motherIsBureau ? getBureauName(person.birthDate) : person.mother.givenNames;
+						const fName = person.fatherIsBureau ? getBureauName(person.birthDate) : person.father.givenNames;
+						const p1 = isP ? fName : mName;
+						const p2 = isP ? mName : fName;
+						const labelGroup = isP ? `${getLabel("father")} & ${getLabel("mother")}` : `${getLabel("mother")} & ${getLabel("father")}`;
+
 						if (useChildFormat) {
-							result += ` born of : ${motherName} & ${fatherName}`;
+							result += ` born of : ${p1} & ${p2}`;
 						} else {
-							result += ` , parents : ${motherName} & ${fatherName}`;
+							result += ` , parents : ${p1} & ${p2}`;
 						}
 					} else if (person.motherName && person.fatherName) {
+						const p1 = isP ? person.fatherName : person.motherName;
+						const p2 = isP ? person.motherName : person.fatherName;
 						if (useChildFormat) {
-							result += ` born of : ${person.motherName} & ${person.fatherName}`;
+							result += ` born of : ${p1} & ${p2}`;
 						} else {
-							result += ` , parents : ${person.motherName} & ${person.fatherName}`;
+							result += ` , parents : ${p1} & ${p2}`;
 						}
 					}
 				}
@@ -4217,7 +4249,7 @@ function getNamesByGender(nameArray, gender) {
 							if (c.died && (isDateBefore(c.deathDate, formattedRefDate) || c.deathDate === formattedRefDate)) {
 								childEffectiveDeath = c.deathDate;
 								const cDeathParts = c._currentAddress ? c._currentAddress.parts : c._deathAddressParts || [];
-								const cDeathAcqDate = (c.addressHistory && c.addressHistory.length > 0) ? c.addressHistory[c.addressHistory.length - 1].date : c.birthDate;
+								const cDeathAcqDate = c.addressHistory && c.addressHistory.length > 0 ? c.addressHistory[c.addressHistory.length - 1].date : c.birthDate;
 								const formattedChildDeathPlace = applyHistoricalPlaceName(getShortPlace(cDeathParts), c.deathDate, cDeathAcqDate);
 								if (c.inMilitary) {
 									childStr += ` died IN MILITARY-SERVICE IN ${formattedChildDeathPlace} ${c.deathDate}`;
@@ -4237,7 +4269,10 @@ function getNamesByGender(nameArray, gender) {
 								fatherName = c.fatherName;
 							}
 							if (motherName && fatherName) {
-								childStr += ` born of : ${motherName} & ${fatherName}`;
+								const isP = document.getElementById("patriarchyToggle") && document.getElementById("patriarchyToggle").checked;
+								const p1 = isP ? fatherName : motherName;
+								const p2 = isP ? motherName : fatherName;
+								childStr += ` born of : ${p1} & ${p2}`;
 							}
 							return childStr;
 						})
@@ -4303,8 +4338,8 @@ function getNamesByGender(nameArray, gender) {
 						});
 					}
 
-					if (person.mother) recursiveRenderAncestors(person.mother, generation + 1, "MOTHER OF " + currentLabel);
-					if (person.father) recursiveRenderAncestors(person.father, generation + 1, "FATHER OF " + currentLabel);
+					if (person.mother) recursiveRenderAncestors(person.mother, generation + 1, getLabel("MOTHER") + " OF " + currentLabel);
+					if (person.father) recursiveRenderAncestors(person.father, generation + 1, getLabel("FATHER") + " OF " + currentLabel);
 				}
 
 				function recursiveRenderCousin(person, ancestorGeneration, descendantDepth) {
@@ -4354,8 +4389,14 @@ function getNamesByGender(nameArray, gender) {
 					});
 				}
 
-				if (tree.self.mother) recursiveRenderAncestors(tree.self.mother, 1, "MOTHER");
-				if (tree.self.father) recursiveRenderAncestors(tree.self.father, 1, "FATHER");
+				const isP = document.getElementById("patriarchyToggle") && document.getElementById("patriarchyToggle").checked;
+				if (isP) {
+					if (tree.self.father) recursiveRenderAncestors(tree.self.father, 1, getLabel("FATHER"));
+					if (tree.self.mother) recursiveRenderAncestors(tree.self.mother, 1, getLabel("MOTHER"));
+				} else {
+					if (tree.self.mother) recursiveRenderAncestors(tree.self.mother, 1, getLabel("MOTHER"));
+					if (tree.self.father) recursiveRenderAncestors(tree.self.father, 1, getLabel("FATHER"));
+				}
 
 				let html = '<div class="tree-separator">SELF TABLE</div>';
 				html += '<table class="family-tree-table">';
@@ -4422,8 +4463,8 @@ function getNamesByGender(nameArray, gender) {
 						});
 					}
 
-					if (person.mother) recursiveRenderAncestors(person.mother, generation + 1, "MOTHER OF " + currentLabel);
-					if (person.father) recursiveRenderAncestors(person.father, generation + 1, "FATHER OF " + currentLabel);
+					if (person.mother) recursiveRenderAncestors(person.mother, generation + 1, getLabel("MOTHER") + " OF " + currentLabel);
+					if (person.father) recursiveRenderAncestors(person.father, generation + 1, getLabel("FATHER") + " OF " + currentLabel);
 				}
 
 				function recursiveRenderCousin(person, ancestorGeneration, descendantDepth) {
@@ -4451,8 +4492,14 @@ function getNamesByGender(nameArray, gender) {
 					});
 				}
 
-				if (spouseTree.spouse.mother) recursiveRenderAncestors(spouseTree.spouse.mother, 1, "MOTHER");
-				if (spouseTree.spouse.father) recursiveRenderAncestors(spouseTree.spouse.father, 1, "FATHER");
+				const isSpP = document.getElementById("patriarchyToggle") && document.getElementById("patriarchyToggle").checked;
+				if (isSpP) {
+					if (spouseTree.spouse.father) recursiveRenderAncestors(spouseTree.spouse.father, 1, getLabel("FATHER"));
+					if (spouseTree.spouse.mother) recursiveRenderAncestors(spouseTree.spouse.mother, 1, getLabel("MOTHER"));
+				} else {
+					if (spouseTree.spouse.mother) recursiveRenderAncestors(spouseTree.spouse.mother, 1, getLabel("MOTHER"));
+					if (spouseTree.spouse.father) recursiveRenderAncestors(spouseTree.spouse.father, 1, getLabel("FATHER"));
+				}
 
 				let html = '<div class="tree-separator">SPOUSE TABLE</div>';
 				html += '<table class="family-tree-table">';
@@ -4507,8 +4554,8 @@ function getNamesByGender(nameArray, gender) {
 						});
 					}
 
-					if (person.mother) recursiveRenderAncestors(person.mother, generation + 1, "MOTHER OF " + currentLabel);
-					if (person.father) recursiveRenderAncestors(person.father, generation + 1, "FATHER OF " + currentLabel);
+					if (person.mother) recursiveRenderAncestors(person.mother, generation + 1, getLabel("MOTHER") + " OF " + currentLabel);
+					if (person.father) recursiveRenderAncestors(person.father, generation + 1, getLabel("FATHER") + " OF " + currentLabel);
 				}
 
 				function recursiveRenderCousin(person, ancestorGeneration, descendantDepth) {
@@ -4549,8 +4596,14 @@ function getNamesByGender(nameArray, gender) {
 				}
 
 				const ex = exSpouseTree.exSpouse;
-				if (ex.mother) recursiveRenderAncestors(ex.mother, 1, "MOTHER");
-				if (ex.father) recursiveRenderAncestors(ex.father, 1, "FATHER");
+				const isExP = document.getElementById("patriarchyToggle") && document.getElementById("patriarchyToggle").checked;
+				if (isExP) {
+					if (ex.father) recursiveRenderAncestors(ex.father, 1, getLabel("FATHER"));
+					if (ex.mother) recursiveRenderAncestors(ex.mother, 1, getLabel("MOTHER"));
+				} else {
+					if (ex.mother) recursiveRenderAncestors(ex.mother, 1, getLabel("MOTHER"));
+					if (ex.father) recursiveRenderAncestors(ex.father, 1, getLabel("FATHER"));
+				}
 
 				let html = `<div class="tree-separator">EX ${exNumber} SPOUSE TABLE</div>`;
 				html += '<table class="family-tree-table">';
@@ -4921,7 +4974,11 @@ function getNamesByGender(nameArray, gender) {
 				const formattedPlaceOfBirth = applyHistoricalPlaceName(placeOfBirth, birthDateStr);
 				const isOrphan = bureauMother.isBureau || bureauFather.isBureau;
 				const isMilitaryDeath = inMilitaryInput && inMilitaryInput.checked;
-				let result = `${familyName} , ${givenNames} born ${formattedPlaceOfBirth} ${birthDateStr}${customDeathStr} , parents : ${parentNames.mother} & ${parentNames.father}`;
+				const isP = document.getElementById("patriarchyToggle") && document.getElementById("patriarchyToggle").checked;
+				const p1 = isP ? parentNames.father : parentNames.mother;
+				const p2 = isP ? parentNames.mother : parentNames.father;
+
+				let result = `${familyName} , ${givenNames} born ${formattedPlaceOfBirth} ${birthDateStr}${customDeathStr} , parents : ${p1} & ${p2}`;
 
 				if (isMarried) {
 					const marriageAge = random(Math.round(18 * m), Math.round(Math.min(age, 40 * m)));
@@ -5384,6 +5441,20 @@ function getNamesByGender(nameArray, gender) {
 			});
 			document.getElementById("birthDate").addEventListener("input", function (e) {
 				this.value = this.value.replace(/\D/g, "").substring(0, 8);
+			});
+			document.getElementById("patriarchyToggle").addEventListener("change", function () {
+				const label = document.querySelector('label[for="patriarchyToggle"]');
+				const maleBtn = document.getElementById("createMale");
+				const femaleBtn = document.getElementById("createFemale");
+				if (this.checked) {
+					label.textContent = "RE‑TURN TO MATRIARCHY";
+					maleBtn.textContent = "CREATE FEMALE";
+					femaleBtn.textContent = "CREATE MALE";
+				} else {
+					label.textContent = "SWITCH TO PATRIARCHY";
+					maleBtn.textContent = "CREATE MALE";
+					femaleBtn.textContent = "CREATE FEMALE";
+				}
 			});
 		</script>
 	</body>
