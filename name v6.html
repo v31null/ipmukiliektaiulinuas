@@ -4,6 +4,9 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>CHARACTER GENERATOR</title>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+		<script src="time.js"></script>
 		<style>
 			* {
 				margin: 0;
@@ -326,7 +329,7 @@
 					<span id="dataStatus" style="color: #000000">NO DATA LOADED</span>
 				</div>
 				<div class="input-section">
-					<div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center">
+					<div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center">
 						<div>
 							<label for="birthDate">DATE</label>
 							<input type="text" id="birthDate" value="19350101" maxlength="8" pattern="\d{8}" style="width: 100px" />
@@ -356,7 +359,7 @@
 							<input type="number" id="ratioInput" value="1" step="0.1" min="0" style="width: 80px" />
 						</div>
 					</div>
-					<div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center">
+					<div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center">
 						<div>
 							<input type="text" id="deathDateInput" placeholder="DATE DEATHES" maxlength="8" pattern="\d{8}" style="width: 140px" />
 						</div>
@@ -368,6 +371,15 @@
 							<input type="number" id="localityStrengthInput" placeholder="%" value="" min="0" max="100" />
 						</div>
 						<input type="number" id="lifeMultiplier" value="1.0" step="0.1" min="0.1" style="width: 100px" />
+					</div>
+					<div id="incestGroup" style="margin-top: 10px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: center; user-select: none; background-color: transparent; border: 1px solid #808080; padding: 6px">
+						<label style="display: flex; align-items: center; gap: 4px; cursor: pointer"><input type="checkbox" class="incest-opt" data-level="0" /> NO INCEST</label>
+						<label style="display: flex; align-items: center; gap: 4px; cursor: pointer"><input type="checkbox" class="incest-opt" data-level="1" /> 2ND DEG. COUSINS</label>
+						<label style="display: flex; align-items: center; gap: 4px; cursor: pointer"><input type="checkbox" class="incest-opt" data-level="2" /> COUSINS OF ALL</label>
+						<label style="display: flex; align-items: center; gap: 4px; cursor: pointer"><input type="checkbox" class="incest-opt" data-level="3" /> SIBLINGS</label>
+						<label style="display: flex; align-items: center; gap: 4px; cursor: pointer"><input type="checkbox" class="incest-opt" data-level="4" /> 1ST VER. SEP. ONLY</label>
+						<label style="display: flex; align-items: center; gap: 4px; cursor: pointer"><input type="checkbox" class="incest-opt" data-level="5" checked /> NO RESTRICTIONS</label>
+						<label style="display: flex; align-items: center; gap: 4px; white-space: nowrap">WEIGHT <input type="number" id="incestWeightInput" value="0" min="0" max="100" style="width: 60px" /></label>
 					</div>
 				</div>
 				<div class="checkbox-section">
@@ -459,10 +471,10 @@
 				<button id="textGen" style="width: 90%">TEXT GEN</button>
 			</div>
 			<div class="button-container">
-				<button id="createMale">CREATE MALE</button>
+				<button id="createMale">CREATE WEREMAN</button>
 				<button id="createMixt">CREATE MIXT</button>
 
-				<button id="createFemale">CREATE FEMALE</button>
+				<button id="createFemale">CREATE WIFEMAN</button>
 				<button id="copyAll">COPY RESULTS</button>
 			</div>
 			<button id="copyJson">EX‑PORT JSON</button>
@@ -492,7 +504,7 @@
 
 				const script = document.createElement("script");
 				script.id = "dataScript";
-				script.src = file;
+				script.src = file + "?v=" + Date.now();
 				script.onload = function () {
 					statusEl.textContent = "LOADED: " + file.toUpperCase();
 					statusEl.style.color = "#4caf50";
@@ -531,7 +543,7 @@
 							};
 							PLACE_ROWS.push(rowObj);
 
-							let p = fetch("data/" + rowObj.fileName)
+							let p = fetch("data/" + rowObj.fileName + "?v=" + Date.now())
 								.then((res) => {
 									if (!res.ok) throw new Error("Network response was not ok");
 									return res.json();
@@ -568,7 +580,29 @@
 				return key;
 			}
 
-			function calculateDetailedAge(birthDate, currentDate, divisor = 1) {
+			const _PT_OK = typeof propertime === "function" && typeof propertime.toJDN === "function";
+			function _astroToCivil(y) {
+				return y <= 0 ? y - 1 : y;
+			}
+			function _civilToAstro(cy) {
+				return cy < 0 ? cy + 1 : cy;
+			}
+			function _ngJDN(parsed) {
+				return propertime.toJDN(_astroToCivil(parsed.year), parsed.month, parsed.day);
+			}
+			function _ngDaysInMonth(astroYear, month) {
+				const cy = _astroToCivil(astroYear);
+				let nm = month + 1,
+					ny = cy;
+				if (nm > 12) {
+					nm = 1;
+					ny = cy + 1;
+					if (ny === 0) ny = 1;
+				}
+				return propertime.toJDN(ny, nm, 1) - propertime.toJDN(cy, month, 1);
+			}
+
+			function _calculateDetailedAge_legacy(birthDate, currentDate, divisor = 1) {
 				const b = parseDate(birthDate);
 				const c = parseDate(currentDate);
 
@@ -586,6 +620,47 @@
 				const days = Math.floor(remainingAfterYears % 30.4375);
 
 				return `( ${years} YRS ${months} MON ${days} DꜼS )`;
+			}
+
+			function calculateDetailedAge(birthDate, currentDate, divisor = 1) {
+				if (!_PT_OK) return _calculateDetailedAge_legacy(birthDate, currentDate, divisor);
+				try {
+					const b = parseDate(birthDate);
+					const c = parseDate(currentDate);
+					let diffDays = _ngJDN(c) - _ngJDN(b);
+					if (diffDays < 0) diffDays = 0;
+
+					if ((divisor || 1) === 1) {
+						let years = c.year - b.year;
+						let months = c.month - b.month;
+						let days = c.day - b.day;
+						if (days < 0) {
+							months--;
+							let pm = c.month - 1,
+								py = c.year;
+							if (pm < 1) {
+								pm = 12;
+								py--;
+							}
+							days += _ngDaysInMonth(py, pm);
+						}
+						if (months < 0) {
+							years--;
+							months += 12;
+						}
+						if (years < 0) years = months = days = 0;
+						return `( ${years} YRS ${months} MON ${days} DꜼS )`;
+					}
+
+					const adjustedDaysTotal = diffDays / divisor;
+					const years = Math.floor(adjustedDaysTotal / 365.2425);
+					const remainingAfterYears = adjustedDaysTotal % 365.2425;
+					const months = Math.floor(remainingAfterYears / 30.4375);
+					const days = Math.floor(remainingAfterYears % 30.4375);
+					return `( ${years} YRS ${months} MON ${days} DꜼS )`;
+				} catch (e) {
+					return _calculateDetailedAge_legacy(birthDate, currentDate, divisor);
+				}
 			}
 
 			function getDualAgeBox(birthDate, referenceDate, deathDate = null) {
@@ -674,7 +749,7 @@
 				}
 
 				if (acqEraIdx !== eventEraIdx) {
-					eraName = "NA";
+					eraName = "";
 				}
 
 				const sep = _PLACE_SEPARATORS[Math.floor(Math.random() * _PLACE_SEPARATORS.length)];
@@ -707,6 +782,7 @@
 				const m = getMultiplier();
 				const refDate = parseDate(referenceDate);
 				const self = person;
+				self._protagonist = true;
 
 				const upGenInput = document.getElementById("upGenInput");
 				const upGenLimit = upGenInput ? parseInt(upGenInput.value) || 2 : 2;
@@ -837,6 +913,74 @@
 					paternalGrandfatherSiblings: [],
 				};
 			}
+			function extractPlaceAndCoords(fullString) {
+	let str = fullString.trim();
+	let foundPlace = str;
+	let coords = null;
+	let bestLen = 0;
+	let bestMatchStr = "";
+	let searchStr = normalizePlaceName(str);
+
+	for (const row of PLACE_ROWS) {
+		if (row.data) {
+			for (const p of row.data) {
+				const pNorm = normalizePlaceName(p.name);
+				if (pNorm && searchStr.includes(pNorm)) {
+					if (pNorm.length > bestLen) {
+						bestLen = pNorm.length;
+						bestMatchStr = pNorm;
+						foundPlace = p.name;
+						coords = p.coordinates;
+					}
+				}
+			}
+		}
+	}
+
+	let namePart = str;
+	if (bestLen > 0) {
+		const idx = searchStr.lastIndexOf(bestMatchStr);
+		if (idx !== -1) {
+			namePart = str.substring(0, idx).trim();
+			namePart = namePart.replace(/[\/\-\.\(\)]+$/, "").trim();
+		}
+	} else {
+		const lastSpaceIndex = Math.max(str.lastIndexOf(" "), str.lastIndexOf("\u00A0"));
+		if (lastSpaceIndex !== -1) {
+			namePart = str.substring(0, lastSpaceIndex).trim();
+			foundPlace = str.substring(lastSpaceIndex + 1).trim();
+		}
+	}
+
+	return { nameStr: namePart, placeName: foundPlace, coords: coords };
+}
+			function resolveParsedAddress(placeData, dateStr) {
+				if (placeData && placeData.coords) {
+					const dv = dateToInteger(dateStr);
+					let pool = _getEffectiveTypePool("place_of_birth", dv);
+					if (!pool || pool.length === 0) {
+						pool = [];
+						for (const row of PLACE_ROWS) {
+							if (row.type === "place_of_birth" && row.data) pool = pool.concat(row.data);
+						}
+					}
+					const addrObj = buildFullAddress(placeData.coords, pool, false);
+					if (addrObj && addrObj.parts && addrObj.parts.length > 0) {
+						return { fullAddress: addrObj.text, parts: addrObj.parts };
+					}
+				}
+				const nm = (placeData && placeData.placeName ? placeData.placeName : "").toUpperCase();
+				return { fullAddress: nm, parts: nm ? [nm] : [] };
+			}
+
+			const _SEX_MARKER_RE = /[\s ]+(KL|ML|K|M)$/;
+			function genderFromMarker(marker) {
+				if (!marker) return null;
+				const eff = marker.charAt(0) === "K" ? 1 : 0;
+				const tog = document.getElementById("patriarchyToggle");
+				return tog && tog.checked ? (eff === 1 ? 0 : 1) : eff;
+			}
+
 			document.getElementById("textGen").addEventListener("click", function () {
 				let input = document.getElementById("textInput").value;
 				if (!input) {
@@ -846,6 +990,10 @@
 
 				input = input.trim();
 
+				const _subjMatch = input.match(_SEX_MARKER_RE);
+				const subjectMarker = _subjMatch ? _subjMatch[1] : null;
+				if (_subjMatch) input = input.slice(0, _subjMatch.index).trim();
+
 				const refDateStr = document.getElementById("birthDate").value;
 				let formattedRefDate;
 				if (/^\d{8}$/.test(refDateStr)) {
@@ -854,7 +1002,9 @@
 					formattedRefDate = "1935/01/01";
 				}
 
-				function detectGender(nameStr) {
+				function detectGender(nameStr, marker) {
+					const fromMarker = genderFromMarker(marker);
+					if (fromMarker !== null) return fromMarker;
 					if (!nameStr) return 1;
 					const firstToken = nameStr.split(/[\s\u00A0]+/)[0];
 					const match = data.first_names ? data.first_names.find((n) => n.name === firstToken) : null;
@@ -875,10 +1025,10 @@
 				const givenNames = mainMatch[2].trim();
 				const birthPlace = mainMatch[3].trim();
 				const birthDate = mainMatch[4].trim();
-				const gender = detectGender(givenNames);
-
-				const coords = resolveCoordsForPlace(birthPlace);
-				const person = createPerson(gender, birthDate, birthPlace, familyName, coords, birthPlace);
+				const gender = detectGender(givenNames, subjectMarker);
+				const placeData = extractPlaceAndCoords(birthPlace);
+				const personAddr = resolveParsedAddress(placeData, birthDate);
+					const person = createPerson(gender, birthDate, placeData.placeName, familyName, placeData.coords, personAddr.fullAddress, personAddr.parts);
 				person.givenNames = givenNames;
 				const metadataIndex = input.search(/,(?:\s|\u00A0)*(?:parents|spouse|ex-spouse|children)[\s\u00A0]*:/i);
 				const headerText = metadataIndex !== -1 ? input.substring(0, metadataIndex) : input;
@@ -917,7 +1067,9 @@
 					const exDate = exMatch[2].trim();
 					const exPlace = exMatch[3].trim();
 					const exGender = gender === 1 ? 0 : 1;
-					const exSpouse = createPerson(exGender, exDate, exPlace, familyName);
+					const exPlaceData = extractPlaceAndCoords(exPlace);
+const exAddr = resolveParsedAddress(exPlaceData, exDate);
+const exSpouse = createPerson(exGender, exDate, exPlaceData.placeName, familyName, exPlaceData.coords, exAddr.fullAddress, exAddr.parts);
 
 					if (gender === 0) {
 						exSpouse.birthFamilyName = weightedRandomChoice(data.family_names);
@@ -949,7 +1101,9 @@
 					const spDate = spouseMatch[2].trim();
 					const spPlace = spouseMatch[3].trim();
 					const spGender = gender === 1 ? 0 : 1;
-					const spouse = createPerson(spGender, spDate, spPlace, familyName);
+					const spPlaceData = extractPlaceAndCoords(spPlace);
+const spAddr = resolveParsedAddress(spPlaceData, spDate);
+const spouse = createPerson(spGender, spDate, spPlaceData.placeName, familyName, spPlaceData.coords, spAddr.fullAddress, spAddr.parts);
 
 					if (gender === 0) {
 						spouse.birthFamilyName = weightedRandomChoice(data.family_names);
@@ -969,26 +1123,25 @@
 					const childEntries = childrenStr.split(/[\s\u00A0]*,[\s\u00A0]*/);
 
 					childEntries.forEach((entry) => {
+						const _cm = entry.match(_SEX_MARKER_RE);
+						const childMarker = _cm ? _cm[1] : null;
+						if (_cm) entry = entry.slice(0, _cm.index);
 						const dateMatch = entry.match(/(\d{4}\/\d{2}\/\d{2}(?:\sA\.C\.)?)/);
 
 						if (dateMatch) {
 							const cDate = dateMatch[1];
 							const dateIndex = dateMatch.index;
+let nameAndPlace = entry.substring(0, dateIndex).trim();
+nameAndPlace = nameAndPlace.replace(/,\s*$/, "").replace(/\sODER\sNA$/, "");
 
-							let nameAndPlace = entry.substring(0, dateIndex).trim();
-							nameAndPlace = nameAndPlace.replace(/,\s*$/, "").replace(/\sODER\sNA$/, "");
+const childPlaceData = extractPlaceAndCoords(nameAndPlace);
+let cName = childPlaceData.nameStr || "UNKNOWN";
+let cPlace = childPlaceData.placeName;
 
-							const lastSpaceIndex = Math.max(nameAndPlace.lastIndexOf(" "), nameAndPlace.lastIndexOf("\u00A0"));
-
-							let cName = nameAndPlace,
-								cPlace = "UNKNOWN";
-							if (lastSpaceIndex !== -1) {
-								cName = nameAndPlace.substring(0, lastSpaceIndex).trim();
-								cPlace = nameAndPlace.substring(lastSpaceIndex + 1).trim();
-							}
-
-							const cGender = detectGender(cName);
-							const child = createPerson(cGender, cDate, cPlace, familyName);
+const cGender = detectGender(cName, childMarker);
+const childAddr = resolveParsedAddress(childPlaceData, cDate);
+const child = createPerson(cGender, cDate, cPlace, familyName, childPlaceData.coords, childAddr.fullAddress, childAddr.parts);
+child.givenNames = cName;
 							child.givenNames = cName;
 
 							const remainder = entry.substring(dateIndex + cDate.length);
@@ -1070,6 +1223,7 @@
 				`;
 
 				output.appendChild(div);
+				renderFamilyMap(tree, formattedRefDate);
 			});
 			document.getElementById("copyJson").addEventListener("click", function () {
 				const outputDiv = document.getElementById("output");
@@ -1092,13 +1246,16 @@
 					stationary: document.getElementById("stationaryInput").checked,
 					familyTree: document.getElementById("familyTreeToggle").checked,
 					col: document.getElementById("colToggle").checked,
+						incest: getIncestLevel(),
+						incestWeight: document.getElementById("incestWeightInput").value,
 				};
 
 				let exportData = {
 					settings: currentSettings,
 					nameEraes: readNameEraesFromTable(),
 					wars: readWarsFromTable(),
-					places: readPlacesFromTable(),
+					places: readPlacesFromTable().map(({ data, ...rest }) => rest),
+
 					urbanisation: readUrbanisationFromTable(),
 					tables: [],
 					rawEntries: [],
@@ -1153,6 +1310,8 @@
 						document.getElementById("stationaryInput").checked = !!s.stationary;
 						document.getElementById("familyTreeToggle").checked = !!s.familyTree;
 						document.getElementById("colToggle").checked = !!s.col;
+						if (s.incest !== undefined) setIncestLevel(s.incest);
+						if (s.incestWeight !== undefined) document.getElementById("incestWeightInput").value = s.incestWeight;
 					}
 
 					if (imported.nameEraes && imported.nameEraes.length > 0) {
@@ -1234,8 +1393,8 @@
 
 			const SOLDIER_AGE_MIN = 19;
 			const SOLDIER_AGE_MAX = 28;
-			const FEMALE_WAR_DEATH_CHANCE = 0.35;
-			const MALE_WAR_DEATH_CHANCE = 0.005;
+			const WIFEMAN_WAR_DEATH_CHANCE = 0.35;
+			const WEREMAN_WAR_DEATH_CHANCE = 0.005;
 			const PEACETIME_MILITARY_DEATH_CHANCE = 0.001;
 
 			const VISIBILITY_DATA = {
@@ -1296,7 +1455,7 @@
 				1895: 98.7,
 				1896: 98.8,
 				1897: 98.8,
-				1898: 18.5,
+				1898: 98.5,
 				1899: 98.2,
 				1900: 98.2,
 				1901: 98.6,
@@ -1410,7 +1569,7 @@
 				let counts = { place_of_birth: 0, death_place: 0 };
 
 				let rowsData = [];
-				for (let i = 1; i < table.rows.length; i++) {
+				for (let i = 0; i < table.rows.length; i++) {
 					const row = table.rows[i];
 					const select = row.querySelector("select");
 					const inputs = row.querySelectorAll("input[type='text']");
@@ -1469,7 +1628,7 @@
 
 			function initializePlacesTable() {
 				const table = document.getElementById("placesTable");
-				while (table.rows.length > 1) table.deleteRow(1);
+				while (table.rows.length > 0) table.deleteRow(0);
 				PLACE_ROWS.forEach((place) => {
 					addPlacesRow(place);
 				});
@@ -1516,7 +1675,7 @@
 			function readPlacesFromTable() {
 				const table = document.getElementById("placesTable");
 				const result = [];
-				for (let i = 1; i < table.rows.length; i++) {
+				for (let i = 0; i < table.rows.length; i++) {
 					const row = table.rows[i];
 					const id = row.querySelector(".place-id").textContent;
 					const type = row.querySelector("select").value;
@@ -1564,7 +1723,7 @@
 
 			function initializeUrbanisationTable() {
 				const table = document.getElementById("urbanisationTable");
-				while (table.rows.length > 1) table.deleteRow(1);
+				while (table.rows.length > 0) table.deleteRow(0);
 				URBANISATION.forEach((urb) => {
 					addUrbanisationRow(urb);
 				});
@@ -1577,7 +1736,7 @@
 			function recalculateUrbanisationEndDates() {
 				const table = document.getElementById("urbanisationTable");
 				let rowsData = [];
-				for (let i = 1; i < table.rows.length; i++) {
+				for (let i = 0; i < table.rows.length; i++) {
 					const row = table.rows[i];
 					const inputs = row.querySelectorAll("input");
 					if (inputs.length < 4) continue;
@@ -1622,7 +1781,7 @@
 			function readUrbanisationFromTable() {
 				const table = document.getElementById("urbanisationTable");
 				const result = [];
-				for (let i = 1; i < table.rows.length; i++) {
+				for (let i = 0; i < table.rows.length; i++) {
 					const inputs = table.rows[i].querySelectorAll("input");
 					result.push({
 						migration: parseInt(inputs[0].value) || 0,
@@ -1637,7 +1796,7 @@
 
 			function initializeNameEraesTable() {
 				const table = document.getElementById("nameEraesTable");
-				while (table.rows.length > 1) table.deleteRow(1);
+				while (table.rows.length > 0) table.deleteRow(0);
 				NAME_ERAES.forEach((era) => {
 					const row = table.insertRow();
 					row.innerHTML = `<td style="width: 85px"><input type="number" value="${era.lastYear}" ></td><td style="width: 85px"><input type="number" value="${era.lastMonth}" min="1" max="12" ></td><td style="width: 85px"><input type="number" value="${era.lastDay}" min="1" max="31" ></td><td ><input type="text" value="${era.namen}" ></td>`;
@@ -1646,7 +1805,7 @@
 
 			function initializeWarsTable() {
 				const table = document.getElementById("warsTable");
-				while (table.rows.length > 1) table.deleteRow(1);
+				while (table.rows.length > 0) table.deleteRow(0);
 				WAR_PERIODS.forEach((war) => {
 					const row = table.insertRow();
 					row.innerHTML = `<td><input type="number" value="${war.start.year}" ></td><td><input type="number" value="${war.start.month}" min="1" max="12" ></td><td><input type="number" value="${war.start.day}" min="1" max="31"></td><td><input type="number" value="${war.end.year}" ></td><td><input type="number" value="${war.end.month}" min="1" max="12" ></td><td><input type="number" value="${war.end.day}" min="1" max="31" ></td>`;
@@ -1656,7 +1815,7 @@
 			function readNameEraesFromTable() {
 				const table = document.getElementById("nameEraesTable");
 				const result = [];
-				for (let i = 1; i < table.rows.length; i++) {
+				for (let i = 0; i < table.rows.length; i++) {
 					const inputs = table.rows[i].querySelectorAll("input");
 					result.push({
 						lastYear: parseInt(inputs[0].value) || 0,
@@ -1671,7 +1830,7 @@
 			function readWarsFromTable() {
 				const table = document.getElementById("warsTable");
 				const result = [];
-				for (let i = 1; i < table.rows.length; i++) {
+				for (let i = 0; i < table.rows.length; i++) {
 					const inputs = table.rows[i].querySelectorAll("input");
 					result.push({
 						start: { year: parseInt(inputs[0].value) || 0, month: parseInt(inputs[1].value) || 1, day: parseInt(inputs[2].value) || 1 },
@@ -1721,7 +1880,7 @@
 						let table = document.getElementById(id);
 						if (table.contains(active)) {
 							const row = active.closest("tr");
-							if (row && row.rowIndex > 0) {
+							if (row) {
 								e.preventDefault();
 								row.remove();
 								if (id === "placesTable") recalculatePlaceIds();
@@ -1749,8 +1908,8 @@
 
 			const MIN_MOTHER_AGE = 18;
 			const MAX_MOTHER_AGE_SOFT = 30;
-			const MENOPAUSE_MIN = 39;
-			const MENOPAUSE_MAX = 45;
+			const MENOPAUSE_MIN = 45;
+			const MENOPAUSE_MAX = 52;
 
 			const DEATH_AGE_MIN = 65;
 			const DEATH_AGE_MAX = 95;
@@ -1758,12 +1917,52 @@
 
 			const SIBLING_CONTINUATION_CHANCE = 0.5;
 			const MAX_SIBLINGS = 5;
-			const TWIN_CHANCE = 0.03;
-			const TRIPLET_CHANCE = 0.005;
+			const TWIN_CHANCE = 0.013;
+			const TRIPLET_CHANCE = 0.0001;
 			const TWIN_DAY_DIFFERENCE_CHANCE = 0.0001;
 
 			const BUREAU_CHANCE = 0.005;
 			const EX_SPOUSE_CHANCE = 0.15;
+
+				const WEREMAN_BIRTH_PROB = 0.512;
+				function randomChildGender() {
+					return Math.random() < WEREMAN_BIRTH_PROB ? 1 : 0;
+				}
+
+				const ILLEGITIMACY_RATE = 0.03 + Math.random() * 0.07;
+				function isIllegitimateBirth() {
+					return Math.random() < ILLEGITIMACY_RATE;
+				}
+				function makeIllegitimate(child) {
+					child.father = null;
+					child.fatherName = getBureauName(child.birthDate);
+					child.fatherIsBureau = true;
+				}
+
+				function getFertilityContinuation(effectiveYear) {
+					if (effectiveYear < 1750) return 0.78;
+					if (effectiveYear < 1850) return 0.74;
+					if (effectiveYear < 1880) return 0.7;
+					if (effectiveYear < 1910) return 0.58;
+					if (effectiveYear < 1940) return 0.45;
+					if (effectiveYear < 1970) return 0.38;
+					return 0.3;
+				}
+
+				function getMaternalMortalityRate(effectiveYear) {
+					if (effectiveYear < 1750) return 0.015;
+					if (effectiveYear < 1850) return 0.012;
+					if (effectiveYear < 1900) return 0.009;
+					if (effectiveYear < 1935) return 0.005;
+					if (effectiveYear < 1960) return 0.002;
+					return 0.0003;
+				}
+
+				function _effectiveYearOf(realYear) {
+					const refY = parseInt(document.getElementById("birthDate").value.substring(0, 4)) || 1935;
+					const techY = parseInt(document.getElementById("technologyYearInput").value) || refY;
+					return realYear + (techY - refY);
+				}
 			function getBureauName(birthDateStr) {
 				if (!data.era_bueroes || data.era_bueroes.length === 0) {
 					return "BUERO";
@@ -1960,35 +2159,12 @@
 				return pool;
 			}
 
-			function _getEffectiveUrbanisation(dateVal) {
-				let urb = URBANISATION[0] || { migration: 0, urbancall: 0.1 };
-				for (const u of URBANISATION) {
-					const start = dateToInteger(u.start);
-					let end = u.end ? dateToInteger(u.end) : 20001230;
-					if (!u.end) {
-						let nextStart = 20001230;
-						for (const u2 of URBANISATION) {
-							const s2 = dateToInteger(u2.start);
-							if (s2 > start && s2 < nextStart) nextStart = s2;
-						}
-						if (nextStart !== 20001230) end = dateIntSubtractOneDay(nextStart);
-					}
-					if (dateVal >= start && dateVal <= end) {
-						urb = u;
-						break;
-					}
-				}
-				return urb;
-			}
-
 			function pickPlace(type, dateStr, anchorCoords = null, fallbackName = null) {
 				const dateVal = dateToInteger(dateStr);
 				let candidates = _getEffectiveTypePool(type, dateVal);
 
 				const anchorFallback = fallbackName || document.getElementById("anchorPlaceInput").value || "UNBEKANNT";
 				if (candidates.length === 0) {
-					// Fallback: pick only the CLOSEST era (highest start ≤ dateVal).
-					// Do NOT merge all eras — that would mix Seljuk/Ottoman into Republic dates.
 					let bestRow = null;
 					let bestStart = -Infinity;
 					for (const row of PLACE_ROWS) {
@@ -2003,7 +2179,6 @@
 					if (bestRow) {
 						candidates = bestRow.data;
 					} else {
-						// No era starts before dateVal — use the earliest available era.
 						let earliestRow = null;
 						let earliestStart = Infinity;
 						for (const row of PLACE_ROWS) {
@@ -2086,7 +2261,6 @@
 				const dv = dateToInteger(dateStr);
 				let typePool = _getEffectiveTypePool(type, dv);
 				if (typePool.length === 0) {
-					// Same closest-era fallback — do not mix all eras.
 					let bestRow = null;
 					let bestStart = -Infinity;
 					for (const row of PLACE_ROWS) {
@@ -2395,7 +2569,7 @@
 						if (isDateBefore(checkDate, person.birthDate)) continue;
 						const ageAtCheck = calculateAge(person.birthDate, checkDate);
 						if (ageAtCheck >= minSoldierAge && ageAtCheck <= maxSoldierAge) {
-							const deathChance = person.gender === 0 ? FEMALE_WAR_DEATH_CHANCE : MALE_WAR_DEATH_CHANCE;
+							const deathChance = person.gender === 0 ? WIFEMAN_WAR_DEATH_CHANCE : WEREMAN_WAR_DEATH_CHANCE;
 							if (Math.random() < deathChance) {
 								let deathMonth, deathDay;
 								if (year === war.start.year) {
@@ -2687,7 +2861,7 @@
 					birthDate: birthDate,
 					birthPlace: birthPlace,
 					birthCoords: birthCoords,
-					addressHistory: fullAddress ? [{ date: birthDate || "", address: fullAddress, parts: addressParts }] : [],
+					addressHistory: fullAddress ? [{ date: birthDate || "", address: fullAddress, parts: addressParts, coords: birthCoords }] : [],
 					familyName: familyName,
 					birthFamilyName: familyName,
 					givenNames: null,
@@ -2708,6 +2882,7 @@
 					health: 100,
 					lastHealthCheckAge: 0,
 					isAncestor: false,
+					willingToAccept: rollWillingness(),
 				};
 			}
 
@@ -2743,6 +2918,12 @@
 
 				const gapYears = firstCurrentChildDate.year - lastExChildDate.year;
 				if (gapYears < 2 * m) return null;
+
+				const exMarriedDate = adjustDateByMonths(exChildren[0].birthDate, -random(9, 20));
+				let exEndDate = adjustDateByMonths(exChildren[exChildren.length - 1].birthDate, random(3, 18));
+				if (isDateAfter(exEndDate, currentChildren[0].birthDate)) {
+					exEndDate = adjustDateByMonths(currentChildren[0].birthDate, -random(9, 14));
+				}
 
 				const exSpouseGender = person.gender === 1 ? 0 : 1;
 				const exSpouseAge = random(Math.round(18 * m), Math.round(35 * m));
@@ -2804,6 +2985,8 @@
 						}
 
 						applyDeathLogic(exSpouseNewSpouse, referenceDate);
+
+						exSpouse.children = [...exChildren, ...exSpouseNewChildren].sort((a, b) => compareDates(a.birthDate, b.birthDate));
 					}
 				}
 
@@ -2819,9 +3002,11 @@
 					exSpouse: exSpouse,
 					exSpouseTree: exSpouseTree,
 					exSpouseNewSpouse: exSpouseNewSpouse,
-					exSpouseNewChildren: [],
+					exSpouseNewChildren: exSpouseNewChildren,
 					exChildren: exChildren,
 					currentChildren: currentChildren,
+					marriedDate: exMarriedDate,
+					endDate: exEndDate,
 				};
 			}
 
@@ -2837,9 +3022,9 @@
 				else if (cousinDegree === 3) label = "3RD COUSIN";
 				else label = `${cousinDegree}TH COUSIN`;
 
-				if (genDiff === 1) label += " ONCE RE‑MOVED";
-				else if (genDiff === 2) label += " TWICE RE‑MOVED";
-				else if (genDiff > 2) label += ` ${genDiff} TIMES RE‑MOVED`;
+				if (genDiff === 1) label += " ONCE RE‑MOVEN";
+				else if (genDiff === 2) label += " TWICE RE‑MOVEN";
+				else if (genDiff > 2) label += ` ${genDiff} TIMES RE‑MOVEN`;
 
 				return label;
 			}
@@ -2895,7 +3080,43 @@
 				person.motherName = motherName;
 				person.fatherName = fatherName;
 			}
+			function maybeRemarryWidowed(person, referenceDate) {
+				const m = getMultiplier();
+				const sp = person.spouse;
+				if (!sp || !sp.died || !sp.deathDate) return;
+				if (!isDateBefore(sp.deathDate, referenceDate)) return;
+
+				const refY = parseDate(referenceDate).year;
+				const deathY = parseDate(sp.deathDate).year;
+				const widowYears = refY - deathY;
+				const ageAtDeath = calculateAge(person.birthDate, sp.deathDate);
+				if (widowYears < Math.round(4 * m)) return;
+				if (ageAtDeath < 18 * m || ageAtDeath > 55 * m) return;
+
+				const remarryYear = deathY + random(Math.round(1 * m), Math.max(Math.round(1 * m), Math.min(widowYears, Math.round(10 * m))));
+				if (person.died && person.deathDate && remarryYear >= parseDate(person.deathDate).year) return;
+				if (Math.random() >= 0.5) return;
+
+				const newGender = person.gender === 1 ? 0 : 1;
+				const ageAtRemarry = remarryYear - parseDate(person.birthDate).year;
+				const diff = Math.random() < 0.5 ? -random(0, Math.round(8 * m)) : random(0, Math.round(8 * m));
+				let newAge = ageAtRemarry + diff;
+				if (newAge < 18 * m) newAge = Math.round(18 * m);
+				const newBD = generateRandomDateInYear(remarryYear - newAge);
+				const newPlace = pickPlace("place_of_birth", newBD, person.birthCoords, person.birthPlace);
+				const newSpouse = createPerson(newGender, newBD, newPlace.name, weightedRandomChoice(data.family_names), newPlace.coordinates, newPlace.fullAddress, newPlace.addressParts);
+				generateGivenNamesForPerson(newSpouse, []);
+
+				person.spouse = newSpouse;
+				newSpouse.spouse = person;
+				if (person.gender === 0) newSpouse.familyName = person.familyName;
+				else person.familyName = newSpouse.familyName;
+				newSpouse._remarriage = true;
+				applyDeathLogic(newSpouse, referenceDate);
+			}
+
 			function generateSpouseForSibling(sibling, referenceDate) {
+				if (sibling.spouse) return;
 				const m = getMultiplier();
 				const sibAge = calculateAge(sibling.birthDate, referenceDate);
 
@@ -2915,26 +3136,46 @@
 
 				const spouseGender = sibling.gender === 1 ? 0 : 1;
 
-				const spouseAge = sibAge + random(-5, 5);
-				const refDate = parseDate(referenceDate);
-				const spouseBirthYear = refDate.year - spouseAge;
-				const spouseBirthDate = generateRandomDateInYear(spouseBirthYear);
-				const spousePlace = pickPlace("place_of_birth", spouseBirthDate, sibling.birthCoords, sibling.birthPlace);
-				const spouse = createPerson(spouseGender, spouseBirthDate, spousePlace.name, weightedRandomChoice(data.family_names), spousePlace.coordinates, spousePlace.fullAddress, spousePlace.addressParts);
-				generateGivenNamesForPerson(spouse, []);
+				const _sibLvl = getIncestLevel();
+				if (_sibLvl >= 1) {
+					const _sibLoc = parseInt(document.getElementById("localityStrengthInput").value) || 0;
+					if (Math.random() * 100 < Math.max(_sibLoc, 30)) {
+						const kinSpouse = _findEndogamousSpouse(sibling, spouseGender, referenceDate, _sibLvl);
+						if (kinSpouse) {
+							sibling.spouse = kinSpouse;
+							kinSpouse.spouse = sibling;
+							if (sibling.gender === 0) kinSpouse.familyName = sibling.familyName;
+							else sibling.familyName = kinSpouse.familyName;
+							_maybeKickOut(sibling, kinSpouse);
+						}
+					}
+				}
 
-				sibling.spouse = spouse;
-				spouse.spouse = sibling;
+				if (!sibling.spouse) {
+					const spouseAge = sibAge + random(-5, 5);
+					const refDate = parseDate(referenceDate);
+					const spouseBirthYear = refDate.year - spouseAge;
+					const spouseBirthDate = generateRandomDateInYear(spouseBirthYear);
+					const spousePlace = pickPlace("place_of_birth", spouseBirthDate, sibling.birthCoords, sibling.birthPlace);
+					const spouse = createPerson(spouseGender, spouseBirthDate, spousePlace.name, weightedRandomChoice(data.family_names), spousePlace.coordinates, spousePlace.fullAddress, spousePlace.addressParts);
+					generateGivenNamesForPerson(spouse, []);
+
+					sibling.spouse = spouse;
+					spouse.spouse = sibling;
+				}
 
 				generateChildrenForSibling(sibling, referenceDate);
 
-				if (sibling.children && sibling.children.length >= 2 && Math.random() < EX_SPOUSE_CHANCE) {
+					if (sibling.spouse && !sibling.spouse._remarriage) applyDeathLogic(sibling.spouse, referenceDate);
+					maybeRemarryWidowed(sibling, referenceDate);
+
+				if (!sibling.spouse._remarriage && sibling.children && sibling.children.length >= 2 && Math.random() < EX_SPOUSE_CHANCE) {
 					const exResult = generateExSpouseIfNeeded(sibling, referenceDate, sibling.children, false);
 					if (exResult) {
 						sibling.exSpouses.push({
 							exSpouse: exResult.exSpouse,
-							marriedDate: null,
-							endDate: null,
+							marriedDate: exResult.marriedDate,
+							endDate: exResult.endDate,
 						});
 						if (sibling.spouse) {
 							sibling.spouse.children = exResult.currentChildren;
@@ -2962,9 +3203,11 @@
 				if (yearsMarried < 1) return;
 				const pC = Math.min(0.85, 0.1 + (0.03 / m) * yearsMarried);
 				if (Math.random() >= pC) return;
+
+					const _fertC = getFertilityContinuation(_effectiveYearOf(parseDate(sibMother.birthDate).year + Math.round(25 * m)));
 				let numChildren = 1;
 				for (let i = 0; i < 4; i++) {
-					if (Math.random() < 0.6) numChildren++;
+					if (Math.random() < _fertC) numChildren++;
 					else break;
 				}
 				const motherBirth = parseDate(sibMother.birthDate);
@@ -3017,7 +3260,7 @@
 						if (validDate) success = true;
 					}
 					if (!success) continue;
-					const childGender = Math.random() < 0.5 ? 1 : 0;
+					const childGender = randomChildGender();
 					let childPlace;
 					let childCoords = null;
 					let childFullAddress = "";
@@ -3082,6 +3325,7 @@
 
 					child.mother = sibMother;
 					child.father = sibFather;
+					if (isIllegitimateBirth()) makeIllegitimate(child);
 
 					applyDeathLogic(child, referenceDate);
 
@@ -3093,8 +3337,205 @@
 				}
 				children.sort((a, b) => compareDates(a.birthDate, b.birthDate));
 				sibMother.children = children;
-				sibFather.children = children;
+				if (!sibMother._protagonist && !sibMother.died) {
+						for (let k = 0; k < children.length; k++) {
+							const cy = parseDate(children[k].birthDate).year;
+							if (Math.random() < getMaternalMortalityRate(_effectiveYearOf(cy)) / m) {
+								sibMother.died = true;
+								sibMother.deathDate = children[k].birthDate;
+								sibMother.inMilitary = false;
+								sibMother.deathPlace = sibMother.birthPlace;
+								children.splice(k + 1);
+								break;
+							}
+						}
+					}
+					sibFather.children = children.filter((c) => c.father === sibFather);
 			}
+			function getIncestLevel() {
+				const el = document.querySelector(".incest-opt:checked");
+				return el ? parseInt(el.dataset.level) || 0 : 0;
+			}
+			function setIncestLevel(n) {
+				document.querySelectorAll(".incest-opt").forEach((cb) => {
+					cb.checked = parseInt(cb.dataset.level) === parseInt(n);
+				});
+			}
+			document.addEventListener("DOMContentLoaded", function () {
+				document.querySelectorAll(".incest-opt").forEach((cb) => {
+					cb.addEventListener("change", function () {
+						if (this.checked) {
+							document.querySelectorAll(".incest-opt").forEach((o) => {
+								if (o !== this) o.checked = false;
+							});
+						} else {
+							this.checked = true;
+						}
+					});
+				});
+			});
+
+			function _ancestorDepths(person, maxUp = 8) {
+				const map = new Map();
+				(function walk(p, d) {
+					if (!p || d > maxUp || map.has(p)) return;
+					map.set(p, d);
+					if (p.mother) walk(p.mother, d + 1);
+					if (p.father) walk(p.father, d + 1);
+				})(person, 0);
+				return map;
+			}
+
+			function kinshipBetween(a, b) {
+				if (!a || !b || a === b) return null;
+				const da = _ancestorDepths(a);
+				const db = _ancestorDepths(b);
+				let best = null;
+				for (const [anc, dist] of da) {
+					if (db.has(anc)) {
+						const total = dist + db.get(anc);
+						if (!best || total < best.total) best = { dA: dist, dB: db.get(anc), total: total };
+					}
+				}
+				if (!best) return null;
+				const minD = Math.min(best.dA, best.dB);
+				return {
+					dA: best.dA,
+					dB: best.dB,
+					genGap: Math.abs(best.dA - best.dB),
+					cousinDegree: minD - 1,
+					direct: minD === 0,
+					sibling: best.dA === 1 && best.dB === 1,
+				};
+			}
+
+			function isUnionAllowed(level, a, b) {
+				const kin = kinshipBetween(a, b);
+				if (!kin) return true;
+				const m = getMultiplier();
+				const ageGap = Math.abs(parseDate(a.birthDate).year - parseDate(b.birthDate).year);
+				const ageClose = ageGap <= Math.round(15 * m);
+				const avuncular = !kin.direct && kin.cousinDegree === 0 && kin.genGap === 1;
+				const sameGenCousin = !kin.direct && !kin.sibling && kin.genGap === 0 && kin.cousinDegree >= 1;
+				switch (level) {
+					case 0:
+						return false;
+					case 1:
+						return sameGenCousin && kin.cousinDegree >= 2;
+					case 2:
+						return sameGenCousin || (avuncular && ageClose);
+					case 3:
+						return !kin.direct && kin.genGap === 0;
+					case 4:
+						return kin.genGap <= 1;
+					case 5:
+						return true;
+					default:
+						return false;
+				}
+			}
+
+			function getIncestWeight() {
+				const el = document.getElementById("incestWeightInput");
+				let v = el ? parseInt(el.value) : 0;
+				if (isNaN(v)) v = 0;
+				return Math.max(0, Math.min(100, v)) / 100;
+			}
+
+			function rollWillingness() {
+				const w = getIncestWeight();
+				const baseAdvance = [0, 0.15, 0.4, 0.02, 0.01, 0.005];
+				let wta = 0;
+				for (let L = 1; L <= 5; L++) {
+					const p = baseAdvance[L] + w * (0.95 - baseAdvance[L]);
+					if (Math.random() < p) wta = L;
+					else break;
+				}
+				return wta;
+			}
+
+			function requiredIncestLevel(a, b) {
+				for (let L = 1; L <= 5; L++) {
+					if (isUnionAllowed(L, a, b)) return L;
+				}
+				return 6;
+			}
+
+			const AGE_OF_MAJORITY = 23;
+
+			function _livesAwayFromFamily(person) {
+				if (!person._currentAddress) return false;
+				const parents = [person.mother, person.father].filter(Boolean);
+				if (parents.length === 0) return false;
+				return !parents.some((p) => p._currentAddress && p._currentAddress.name === person._currentAddress.name);
+			}
+			function _isLing(person, referenceDate) {
+				if (person.spouse || (person.exSpouses && person.exSpouses.length > 0) || (person.children && person.children.length > 0)) return false;
+				if (referenceDate && calculateAge(person.birthDate, referenceDate) >= Math.round(AGE_OF_MAJORITY * getMultiplier())) return false;
+				if (_livesAwayFromFamily(person)) return false;
+				return true;
+			}
+			function _partyConsents(person, reqL, referenceDate) {
+				if (!_isLing(person, referenceDate)) return (person.willingToAccept || 0) >= reqL;
+				const realParents = [person.mother, person.father].filter(Boolean);
+				if (realParents.length === 0) return true;
+				return realParents.every((p) => (p.willingToAccept || 0) >= reqL);
+			}
+			function unionConsented(self, candidate, referenceDate) {
+				if (!kinshipBetween(self, candidate)) return true;
+				const reqL = requiredIncestLevel(self, candidate);
+				return _partyConsents(self, reqL, referenceDate) && _partyConsents(candidate, reqL, referenceDate);
+			}
+
+			function _maybeKickOut(person, candidate) {
+				if (!kinshipBetween(person, candidate)) return;
+				const reqL = requiredIncestLevel(person, candidate);
+				const parents = [person.mother, person.father].filter(Boolean);
+				const dissenting = parents.filter((p) => (p.willingToAccept || 0) < reqL).length;
+				let kicked = false;
+				if (dissenting >= 2) kicked = true;
+				else if (dissenting === 1) kicked = Math.random() < 0.5;
+				if (kicked) {
+					person._kickedOut = true;
+					if (candidate) candidate._kickedOut = true;
+				}
+			}
+
+			function _findEndogamousSpouse(self, spouseGender, referenceDate, level) {
+				const m = getMultiplier();
+				const all = [];
+				const seen = new Set();
+				(function collect(p) {
+					if (!p || seen.has(p)) return;
+					seen.add(p);
+					all.push(p);
+					if (p.mother) collect(p.mother);
+					if (p.father) collect(p.father);
+					if (p.spouse) collect(p.spouse);
+					if (p.siblings) p.siblings.forEach(collect);
+					if (p.children) p.children.forEach(collect);
+					if (p.exSpouses) p.exSpouses.forEach((e) => collect(e.exSpouse));
+				})(self);
+
+				const selfAge = calculateAge(self.birthDate, referenceDate);
+				const candidates = all.filter(
+					(p) =>
+						p !== self &&
+						p.gender === spouseGender &&
+						!p.spouse &&
+						!p.died &&
+						!p._protagonist &&
+						calculateAge(p.birthDate, referenceDate) >= 18 * m &&
+						Math.abs(calculateAge(p.birthDate, referenceDate) - selfAge) <= Math.round(15 * m) &&
+						isUnionAllowed(level, self, p) &&
+						unionConsented(self, p, referenceDate)
+				);
+				if (candidates.length === 0) return null;
+				const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+				chosen._endogamous = true;
+				return chosen;
+			}
+
 			function generateSpouseForSelf(self, referenceDate, grandparents = []) {
 				const m = getMultiplier();
 				const selfAge = calculateAge(self.birthDate, referenceDate);
@@ -3103,6 +3544,22 @@
 				if (Math.random() >= pM) return null;
 
 				const spouseGender = self.gender === 1 ? 0 : 1;
+
+					const _incestLvl = getIncestLevel();
+					if (_incestLvl >= 1) {
+						const _locStr = parseInt(document.getElementById("localityStrengthInput").value) || 0;
+						if (Math.random() * 100 < Math.max(_locStr, 15)) {
+							const kinSpouse = _findEndogamousSpouse(self, spouseGender, referenceDate, _incestLvl);
+							if (kinSpouse) {
+								self.spouse = kinSpouse;
+								kinSpouse.spouse = self;
+								if (self.gender === 0) kinSpouse.familyName = self.familyName;
+								else self.familyName = kinSpouse.familyName;
+								_maybeKickOut(self, kinSpouse);
+								return kinSpouse;
+							}
+						}
+					}
 				const rand = Math.random();
 				let spouseAgeDiff;
 				if (rand < 0.44) {
@@ -3149,9 +3606,11 @@
 				const pC = Math.min(0.9, 0.1 + (0.03 / m) * yearsMarried);
 				if (Math.random() >= pC) return children;
 
+					const _fertC = getFertilityContinuation(_effectiveYearOf(parseDate(mother.birthDate).year + Math.round(25 * m)));
+
 				let numChildren = 1;
 				for (let i = 0; i < 5; i++) {
-					if (Math.random() < 0.7) numChildren++;
+					if (Math.random() < _fertC) numChildren++;
 					else break;
 				}
 
@@ -3207,7 +3666,7 @@
 						if (validDate) success = true;
 					}
 					if (!success) continue;
-					const childGender = Math.random() < 0.5 ? 1 : 0;
+					const childGender = randomChildGender();
 					let childPlace;
 					let childCoords = null;
 					let childFullAddress = "";
@@ -3294,6 +3753,7 @@
 					const child = createPerson(childGender, childBirthDate, childPlace, familyName, childCoords, childFullAddress, childAddressParts);
 					child.mother = mother;
 					child.father = father;
+					if (isIllegitimateBirth()) makeIllegitimate(child);
 					generateGivenNamesForPerson(child, grandparents, usedFirstNames);
 					const firstName = child.givenNames.split(" ")[0];
 					usedFirstNames.add(firstName);
@@ -3302,7 +3762,20 @@
 				}
 				children.sort((a, b) => compareDates(a.birthDate, b.birthDate));
 				mother.children = children;
-				father.children = children;
+					if (!mother._protagonist && !mother.died) {
+						for (let k = 0; k < children.length; k++) {
+							const cy = parseDate(children[k].birthDate).year;
+							if (Math.random() < getMaternalMortalityRate(_effectiveYearOf(cy)) / m) {
+								mother.died = true;
+								mother.deathDate = children[k].birthDate;
+								mother.inMilitary = false;
+								mother.deathPlace = mother.birthPlace;
+								children.splice(k + 1);
+								break;
+							}
+						}
+					}
+					father.children = children.filter((c) => c.father === father);
 
 				for (const child of children) {
 					child.siblings = children.filter((c) => c !== child);
@@ -3415,7 +3888,7 @@
 
 					if (!success) continue;
 
-					const gcGender = Math.random() < 0.5 ? 1 : 0;
+					const gcGender = randomChildGender();
 					let gcPlace;
 					let gcCoords = null;
 					let gcFullAddress = "";
@@ -3660,7 +4133,7 @@
 					}
 
 					const createSiblingPerson = (sibBirthDate) => {
-						const sibGender = Math.random() < 0.5 ? 1 : 0;
+						const sibGender = randomChildGender();
 						const sib = createPerson(sibGender, sibBirthDate, birthPlace, familyName, birthCoords, fullBirthAddress);
 						sib.mother = mother;
 						sib.father = father;
@@ -3741,8 +4214,8 @@
 					if (exResult) {
 						mother.exSpouses.push({
 							exSpouse: exResult.exSpouse,
-							marriedDate: null,
-							endDate: null,
+							marriedDate: exResult.marriedDate,
+							endDate: exResult.endDate,
 						});
 						father.children = exResult.currentChildren;
 					}
@@ -3874,6 +4347,9 @@
 				processCollaterals(fatherSiblings);
 				applyDeathLogic(mother, referenceDate);
 				applyDeathLogic(father, referenceDate);
+
+				maybeRemarryWidowed(mother, referenceDate);
+				maybeRemarryWidowed(father, referenceDate);
 			}
 			function generateFamilyTree(referenceDate, selfGender) {
 				const m = getMultiplier();
@@ -3899,6 +4375,7 @@
 				const selfFamilyName = weightedRandomChoice(data.family_names);
 				const self = createPerson(selfGender, selfBirthDate, selfBirthPlace, selfFamilyName, typeof sObj !== "undefined" ? sObj.coordinates : null, typeof sObj !== "undefined" ? sObj.fullAddress : selfBirthPlace, typeof sObj !== "undefined" ? sObj.addressParts : []);
 				self.isAncestor = true;
+				self._protagonist = true;
 				generateAncestors(self, 1, upGenLimit, referenceDate);
 
 				const mother = self.mother;
@@ -3952,13 +4429,57 @@
 					const exResult = generateExSpouseIfNeeded(self, referenceDate, children, true);
 
 					if (exResult) {
-						self.exSpouses.push({ exSpouse: exResult.exSpouse, marriedDate: null, endDate: null });
+						self.exSpouses.push({ exSpouse: exResult.exSpouse, marriedDate: exResult.marriedDate, endDate: exResult.endDate });
 						exSpouseTrees.push(exResult);
 						if (spouse) spouse.children = exResult.currentChildren;
 						children = exResult.currentChildren;
 					}
 				}
-				if (spouse) spouseTree = generateSpouseTree(spouse, referenceDate);
+				if (spouse && !spouse._endogamous) spouseTree = generateSpouseTree(spouse, referenceDate);
+
+				let remarriageSpouse = null;
+				let remarriageTree = null;
+				if (spouse && spouse.died && spouse.deathDate && isDateBefore(spouse.deathDate, referenceDate)) {
+					const refY = parseDate(referenceDate).year;
+					const deathY = parseDate(spouse.deathDate).year;
+					const widowYears = refY - deathY;
+					const selfAgeAtDeath = calculateAge(self.birthDate, spouse.deathDate);
+
+					if (widowYears >= Math.round(4 * m) && selfAgeAtDeath >= Math.round(18 * m) && selfAgeAtDeath <= Math.round(55 * m) && Math.random() < 0.5) {
+						const remarryYear = deathY + random(Math.round(1 * m), Math.max(Math.round(1 * m), widowYears));
+						const newGender = self.gender === 1 ? 0 : 1;
+						const selfAgeAtRemarry = remarryYear - parseDate(self.birthDate).year;
+						let newAgeDiff = Math.random() < 0.5 ? -random(0, Math.round(8 * m)) : random(0, Math.round(8 * m));
+						let newAge = selfAgeAtRemarry + newAgeDiff;
+						if (newAge < 18 * m) newAge = Math.round(18 * m);
+						const newBirthDate = generateRandomDateInYear(remarryYear - newAge);
+						const newPlace = pickPlace("place_of_birth", newBirthDate, self.birthCoords, self.birthPlace);
+						remarriageSpouse = createPerson(newGender, newBirthDate, newPlace.name, weightedRandomChoice(data.family_names), newPlace.coordinates, newPlace.fullAddress, newPlace.addressParts);
+						generateGivenNamesForPerson(remarriageSpouse, allGrandparents);
+
+						self.spouse = remarriageSpouse;
+						remarriageSpouse.spouse = self;
+						if (self.gender === 0) {
+							remarriageSpouse.familyName = self.familyName;
+						} else {
+							self.familyName = remarriageSpouse.familyName;
+						}
+
+						applyDeathLogic(remarriageSpouse, referenceDate);
+
+						const existingSelfChildren = self.children ? [...self.children] : [];
+						const rMother = self.gender === 0 ? self : remarriageSpouse;
+						const rFather = self.gender === 1 ? self : remarriageSpouse;
+						let newKids = generateChildrenForCouple(rMother, rFather, referenceDate, allGrandparents) || [];
+						newKids = newKids.filter((c) => isDateAfter(c.birthDate, spouse.deathDate));
+						self.children = [...existingSelfChildren, ...newKids].sort((a, b) => compareDates(a.birthDate, b.birthDate));
+						remarriageSpouse.children = newKids;
+						newKids.forEach((c) => applyDeathLogic(c, referenceDate));
+						processCollaterals(newKids);
+
+						remarriageTree = generateSpouseTree(remarriageSpouse, referenceDate);
+					}
+				}
 
 				simulateMigration(self, referenceDate);
 
@@ -3967,6 +4488,8 @@
 					selfSiblings: selfSiblings,
 					spouse: spouse,
 					spouseTree: spouseTree,
+					remarriageSpouse: remarriageSpouse,
+					remarriageTree: remarriageTree,
 					exSpouseTrees: exSpouseTrees,
 					children: children,
 					grandchildren: [],
@@ -3984,7 +4507,7 @@
 					paternalGrandfatherSiblings: [],
 				};
 			}
-			function adjustDateByMonths(dateStr, months) {
+			function _adjustDateByMonths_legacy(dateStr, months) {
 				const d = parseDate(dateStr);
 				let year = d.year;
 				let month = d.month + Math.round(months);
@@ -3998,7 +4521,22 @@
 				}
 				return formatDate(year, month, d.day);
 			}
+			function adjustDateByMonths(dateStr, months) {
+				if (!_PT_OK) return _adjustDateByMonths_legacy(dateStr, months);
+				try {
+					const d = parseDate(dateStr);
+					const pt = propertime({ YRS: String(_astroToCivil(d.year)), MON: d.month, DAYS: d.day }).add(Math.round(months), "MON");
+					const civil = parseInt(pt.year);
+					return formatDate(_civilToAstro(civil), parseInt(pt.month), parseInt(pt.day));
+				} catch (e) {
+					return _adjustDateByMonths_legacy(dateStr, months);
+				}
+			}
 
+			function _migMoveDate(y, person) {
+				const d = formatDate(y, 1, 1);
+				return person && person.birthDate && isDateBefore(d, person.birthDate) ? person.birthDate : d;
+			}
 			function simulateMigration(rootPerson, referenceDate) {
 				const m = getMultiplier();
 				let allPeople = [];
@@ -4050,23 +4588,20 @@
 						const by = parseDate(p.birthDate).year;
 						if (y < by) continue;
 
-						// ERA CONTINUITY CHECK
 						const bDate = parseDate(p.birthDate);
 						const lastCheckDate = p._lastMoveYear ? { year: p._lastMoveYear, month: 1, day: 1 } : bDate;
 						const lastEraIdx = _getEraIndex(lastCheckDate.year, lastCheckDate.month, lastCheckDate.day);
 						const currentEraIdx = _getEraIndex(y, 1, 1);
 
 						if (currentEraIdx !== lastEraIdx && p._currentAddress) {
-							// Try to upgrade to the same place in the new era
 							let replacement = pickPlace("place_of_birth", formatDate(y, 1, 1), p._currentAddress.coords);
 							if (_isSameLocation(p._currentAddress, replacement)) {
 								p._currentAddress = { name: replacement.fullAddress, coords: replacement.coordinates, parts: replacement.addressParts };
 								p._lastMoveYear = y;
 								if (!p.addressHistory) p.addressHistory = [];
-								p.addressHistory.push({ date: formatDate(y, 1, 1), address: p._currentAddress.name, parts: p._currentAddress.parts });
+								p.addressHistory.push({ date: _migMoveDate(y, p), address: p._currentAddress.name, parts: p._currentAddress.parts, coords: p._currentAddress.coords });
 							} else {
-								// No local replacement, they stay in the old set (meaning they'll show NA later)
-								p._lastMoveYear = y; // mark as checked for this era
+								p._lastMoveYear = y;
 							}
 						}
 
@@ -4079,7 +4614,7 @@
 								p.birthPlace = p._currentAddress.name;
 								p.birthCoords = p._currentAddress.coords;
 								p._birthAddressParts = p._currentAddress.parts;
-								p.addressHistory = [{ date: p.birthDate || "", address: p._currentAddress.name, parts: p._currentAddress.parts }];
+								p.addressHistory = [{ date: p.birthDate || "", address: p._currentAddress.name, parts: p._currentAddress.parts, coords: p._currentAddress.coords }];
 								p._lastMoveYear = y;
 							} else {
 								let addrName = p.birthPlace;
@@ -4119,7 +4654,7 @@
 							if (guardian && p._currentAddress && p._currentAddress.name !== guardian._currentAddress.name) {
 								p._currentAddress = guardian._currentAddress;
 								if (!p.addressHistory) p.addressHistory = [];
-								p.addressHistory.push({ date: formatDate(y, 1, 1), address: p._currentAddress.name, parts: p._currentAddress.parts });
+								p.addressHistory.push({ date: _migMoveDate(y, p), address: p._currentAddress.name, parts: p._currentAddress.parts, coords: p._currentAddress.coords });
 							}
 							continue;
 						}
@@ -4137,19 +4672,41 @@
 								if (newPlaceObj.fullAddress !== oldAddrName) {
 									p._currentAddress = { name: newPlaceObj.fullAddress, coords: newPlaceObj.coordinates, parts: newPlaceObj.addressParts };
 									if (!p.addressHistory) p.addressHistory = [];
-									p.addressHistory.push({ date: formatDate(y, 1, 1), address: p._currentAddress.name, parts: p._currentAddress.parts });
+									p.addressHistory.push({ date: _migMoveDate(y, p), address: p._currentAddress.name, parts: p._currentAddress.parts, coords: p._currentAddress.coords });
 									p._lastMoveYear = y;
 
 									if (p.spouse && !p.spouse.died) {
 										p.spouse._currentAddress = { name: p._currentAddress.name, coords: p._currentAddress.coords, parts: p._currentAddress.parts };
 										if (!p.spouse.addressHistory) p.spouse.addressHistory = [];
-										p.spouse.addressHistory.push({ date: formatDate(y, 1, 1), address: p._currentAddress.name, parts: p._currentAddress.parts });
+										p.spouse.addressHistory.push({ date: _migMoveDate(y, p.spouse), address: p._currentAddress.name, parts: p._currentAddress.parts, coords: p._currentAddress.coords });
 										p.spouse._lastMoveYear = y;
 									}
 								} else {
 									p._lastMoveYear = y;
 								}
 							}
+						}
+					}
+				}
+
+				const _refYk = parseDate(referenceDate).year;
+				for (const p of allPeople) {
+					if (!p._kickedOut || !p._currentAddress) continue;
+					const kp = [p.mother, p.father].filter(Boolean);
+					const atHome = kp.some((par) => par._currentAddress && par._currentAddress.name === p._currentAddress.name);
+					if (!atHome) continue;
+					const relocYear = Math.min(_refYk, parseDate(p.birthDate).year + Math.round(22 * m));
+					const dateStr = formatDate(relocYear, 1, 1);
+					const np = pickPlace("place_of_birth", dateStr, null);
+					if (np && np.fullAddress && np.fullAddress !== p._currentAddress.name) {
+						const addr = { name: np.fullAddress, coords: np.coordinates, parts: np.addressParts };
+						p._currentAddress = addr;
+						if (!p.addressHistory) p.addressHistory = [];
+						p.addressHistory.push({ date: dateStr, address: addr.name, parts: addr.parts, coords: addr.coords });
+						if (p.spouse && !p.spouse.died) {
+							p.spouse._currentAddress = addr;
+							if (!p.spouse.addressHistory) p.spouse.addressHistory = [];
+							p.spouse.addressHistory.push({ date: dateStr, address: addr.name, parts: addr.parts, coords: addr.coords });
 						}
 					}
 				}
@@ -4162,6 +4719,15 @@
 				}
 			}
 
+			function getSexMarker(person) {
+				const tog = document.getElementById("patriarchyToggle");
+				const eff = tog && tog.checked ? (person.gender === 1 ? 0 : 1) : person.gender;
+				let marker = eff === 1 ? "K" : "M";
+
+				const isMan = !!person.spouse || (person.exSpouses && person.exSpouses.length > 0) || (person.children && person.children.length > 0);
+				if (!isMan) marker += "L";
+				return marker;
+			}
 			function formatPersonInline(person, showParents = true, useChildFormat = false, showSpouse = true, showChildren = true, showExSpouse = true) {
 				if (!person || typeof person !== "object") return "[Data Error]";
 
@@ -4193,9 +4759,9 @@
 
 				if (showParents) {
 					const isP = document.getElementById("patriarchyToggle") && document.getElementById("patriarchyToggle").checked;
-					if (person.mother && person.father) {
-						const mName = person.motherIsBureau ? getBureauName(person.birthDate) : person.mother.givenNames;
-						const fName = person.fatherIsBureau ? getBureauName(person.birthDate) : person.father.givenNames;
+					if ((person.mother || person.motherName) && (person.father || person.fatherName)) {
+						const mName = person.mother ? (person.motherIsBureau ? getBureauName(person.birthDate) : person.mother.givenNames) : person.motherName;
+						const fName = person.father ? (person.fatherIsBureau ? getBureauName(person.birthDate) : person.father.givenNames) : person.fatherName;
 						const p1 = isP ? fName : mName;
 						const p2 = isP ? mName : fName;
 						const labelGroup = isP ? `${getLabel("father")} & ${getLabel("mother")}` : `${getLabel("mother")} & ${getLabel("father")}`;
@@ -4274,6 +4840,7 @@
 								const p2 = isP ? motherName : fatherName;
 								childStr += ` born of : ${p1} & ${p2}`;
 							}
+							childStr += ` ${getSexMarker(c)}`;
 							return childStr;
 						})
 						.join(" , ");
@@ -4284,7 +4851,100 @@
 					result += `<span class="address-history">${formatAddressList(person.addressHistory)}</span>`;
 				}
 
+				result += ` ${getSexMarker(person)}`;
+
 				return result;
+			}
+			let familyMapInstance = null;
+			function renderFamilyMap(tree, referenceDate) {
+				if (typeof L === "undefined" || !tree || !tree.self) return;
+				const output = document.getElementById("output");
+
+				const people = [];
+				const seen = new Set();
+				(function collect(p) {
+					if (!p || seen.has(p)) return;
+					seen.add(p);
+					people.push(p);
+					collect(p.mother);
+					collect(p.father);
+					collect(p.spouse);
+					if (p.exSpouses) p.exSpouses.forEach((e) => collect(e.exSpouse));
+					if (p.siblings) p.siblings.forEach(collect);
+					if (p.children) p.children.forEach(collect);
+				})(tree.self);
+
+				const section = document.createElement("div");
+				section.style.marginTop = "20px";
+				const sep = document.createElement("div");
+				sep.className = "tree-separator";
+				sep.textContent = "MAP — WHERE THEY WERE";
+				section.appendChild(sep);
+				const mapDiv = document.createElement("div");
+				mapDiv.style.width = "100%";
+				mapDiv.style.height = "500px";
+				mapDiv.style.border = "1px solid #000000";
+				section.appendChild(mapDiv);
+				output.appendChild(section);
+
+				if (familyMapInstance) {
+					try {
+						familyMapInstance.remove();
+					} catch (e) {}
+					familyMapInstance = null;
+				}
+				const fmap = L.map(mapDiv, { center: [51, 13], zoom: 5 });
+				familyMapInstance = fmap;
+				L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+					maxZoom: 19,
+					attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+				}).addTo(fmap);
+
+				const bounds = [];
+				const tableRows = [];
+				let idx = 0;
+				for (const p of people) {
+					let hist = p.addressHistory && p.addressHistory.length ? p.addressHistory : [];
+					if (hist.length === 0 && p.birthCoords) hist = [{ date: p.birthDate, address: p.birthPlace, coords: p.birthCoords }];
+					const mName = p.mother ? (p.motherIsBureau ? getBureauName(p.birthDate) : p.mother.givenNames) : p.motherName;
+					const fName = p.father ? (p.fatherIsBureau ? getBureauName(p.birthDate) : p.father.givenNames) : p.fatherName;
+					let who = `${p.familyName || "?"} , ${p.givenNames || "?"}`;
+					if (mName && fName) {
+						const isP = document.getElementById("patriarchyToggle") && document.getElementById("patriarchyToggle").checked;
+						who += ` WHO GIRL OF ${isP ? fName : mName} ET ${isP ? mName : fName} IS`;
+					}
+					const trail = [];
+					let anyPlaced = false;
+					for (let i = 0; i < hist.length; i++) {
+						const e = hist[i];
+						const c = e.coords;
+						const start = e.date || p.birthDate || "";
+						const end = i < hist.length - 1 ? hist[i + 1].date : p.died && p.deathDate ? p.deathDate : referenceDate;
+						if (start && end && !isDateAfter(end, start)) continue;
+						if (!c || c.length !== 2 || typeof c[0] !== "number" || typeof c[1] !== "number") {
+							tableRows.push(`<tr><td>${who}</td><td>${e.address || ""} (NO COORDS)</td><td>${start}‒${end}</td></tr>`);
+							continue;
+						}
+						const j = 0.0012;
+						const la = c[0] + ((idx % 5) - 2) * j;
+						const lo = c[1] + ((Math.floor(idx / 5) % 5) - 2) * j;
+						const marker = L.circleMarker([la, lo], { radius: 5, color: "#000000", weight: 1, fillColor: "#0078d7", fillOpacity: 0.85 }).addTo(fmap);
+						marker.bindPopup(`${who} ${start}‒${end}`);
+						bounds.push([la, lo]);
+						trail.push([la, lo]);
+						anyPlaced = true;
+						tableRows.push(`<tr><td>${who}</td><td>${e.address || ""}</td><td>${start}‒${end}</td></tr>`);
+					}
+					if (trail.length > 1) L.polyline(trail, { color: "#0078d7", weight: 1, opacity: 0.4 }).addTo(fmap);
+					if (anyPlaced) idx++;
+				}
+
+				if (bounds.length > 0) fmap.fitBounds(bounds, { padding: [30, 30], maxZoom: 11 });
+				setTimeout(() => fmap.invalidateSize(), 200);
+
+				const tableDiv = document.createElement("div");
+				tableDiv.innerHTML = '<table class="family-tree-table" style="margin-top:10px"><tr><th>WHO</th><th>PLACE</th><th>FROM‒TO</th></tr>' + tableRows.join("") + "</table>";
+				section.appendChild(tableDiv);
 			}
 			function renderFamilyTreeTable(tree, referenceDate) {
 				let rows = [];
@@ -4360,13 +5020,13 @@
 					}
 
 					if (removed === 1) {
-						label += " ONCE RE-MOVT";
+						label += " ONCE RE‑MOVEN";
 					} else if (removed === 2) {
-						label += " TWICE RE-MOVT";
+						label += " TWICE RE‑MOVEN";
 					} else if (removed === 3) {
-						label += " THRICE RE-MOVT";
+						label += " THRICE RE‑MOVEN";
 					} else if (removed > 3) {
-						label += ` ${removed} TIMES RE-MOVT`;
+						label += ` ${removed} TIMES RE‑MOVEN`;
 					}
 
 					rows.push({ type: "collateral", closeness: label, person: person, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
@@ -4415,6 +5075,10 @@
 					html += renderSpouseTable(tree.spouseTree, referenceDate);
 				}
 
+				if (tree.remarriageTree) {
+					html += renderSpouseTable(tree.remarriageTree, referenceDate, "RE‑MARRIAGE SPOUSE TABLE");
+				}
+
 				if (tree.exSpouseTrees && tree.exSpouseTrees.length > 0) {
 					tree.exSpouseTrees.forEach((exItem, index) => {
 						html += renderExSpouseTable(exItem, index + 1, referenceDate, tree.self);
@@ -4422,7 +5086,7 @@
 				}
 				return html;
 			}
-			function renderSpouseTable(spouseTree, referenceDate) {
+			function renderSpouseTable(spouseTree, referenceDate, tableLabel = "SPOUSE TABLE") {
 				let rows = [];
 
 				function recursiveRenderSiblingDescendant(person, generation) {
@@ -4472,9 +5136,9 @@
 					const removed = Math.abs(ancestorGeneration - descendantDepth);
 					let label = `${degree}TH COUSIN`;
 					if (degree === 1) label = "1ST COUSIN";
-					if (removed === 1) label += " ONCE RE‑MOVED";
-					else if (removed === 2) label += " TWICE RE‑MOVED";
-					else if (removed > 2) label += ` ${removed} TIMES RE‑MOVED`;
+					if (removed === 1) label += " ONCE RE‑MOVEN";
+					else if (removed === 2) label += " TWICE RE‑MOVEN";
+					else if (removed > 2) label += ` ${removed} TIMES RE‑MOVEN`;
 
 					rows.push({ type: "collateral", closeness: label, person: person, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
 
@@ -4501,7 +5165,7 @@
 					if (spouseTree.spouse.father) recursiveRenderAncestors(spouseTree.spouse.father, 1, getLabel("FATHER"));
 				}
 
-				let html = '<div class="tree-separator">SPOUSE TABLE</div>';
+				let html = `<div class="tree-separator">${tableLabel}</div>`;
 				html += '<table class="family-tree-table">';
 				html += "<tr><th>CLOSENESS</th><th colspan=2>DETAIL</th></tr>";
 
@@ -4563,7 +5227,7 @@
 					const removed = Math.abs(ancestorGeneration - descendantDepth);
 					let label = `${degree}TH COUSIN`;
 					if (degree === 1) label = "1ST COUSIN";
-					if (removed > 0) label += ` ${removed} REMOVED`;
+					if (removed > 0) label += ` ${removed} RE‑MOVEN`;
 
 					rows.push({ type: "collateral", closeness: label, person: person, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
 
@@ -4648,7 +5312,7 @@
 					rows.push({ closeness: "SIBLING OF MOTHER OF MOTHER", person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
 					if (sib.children && sib.children.length > 0) {
 						for (const child of sib.children) {
-							rows.push({ closeness: "1ST COUSIN ONCE RE‑MOVED", person: child, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+							rows.push({ closeness: "1ST COUSIN ONCE RE‑MOVEN", person: child, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
 
 							if (child.children && child.children.length > 0) {
 								for (const secondCousin of child.children) {
@@ -4656,7 +5320,7 @@
 
 									if (secondCousin.children && secondCousin.children.length > 0) {
 										for (const twiceRemoved of secondCousin.children) {
-											rows.push({ closeness: "2ND COUSIN ONCE RE‑MOVED", person: twiceRemoved, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+											rows.push({ closeness: "2ND COUSIN ONCE RE‑MOVEN", person: twiceRemoved, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
 										}
 									}
 								}
@@ -4670,7 +5334,7 @@
 					rows.push({ closeness: "SIBLING OF FATHER OF MOTHER", person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
 					if (sib.children && sib.children.length > 0) {
 						for (const child of sib.children) {
-							rows.push({ closeness: "1ST COUSIN ONCE RE‑MOVED", person: child, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+							rows.push({ closeness: "1ST COUSIN ONCE RE‑MOVEN", person: child, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
 
 							if (child.children && child.children.length > 0) {
 								for (const secondCousin of child.children) {
@@ -4678,7 +5342,7 @@
 
 									if (secondCousin.children && secondCousin.children.length > 0) {
 										for (const twiceRemoved of secondCousin.children) {
-											rows.push({ closeness: "2ND COUSIN ONCE RE‑MOVED", person: twiceRemoved, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+											rows.push({ closeness: "2ND COUSIN ONCE RE‑MOVEN", person: twiceRemoved, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
 										}
 									}
 								}
@@ -4702,7 +5366,7 @@
 					rows.push({ closeness: "SIBLING OF FATHER OF FATHER", person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
 					if (sib.children && sib.children.length > 0) {
 						for (const child of sib.children) {
-							rows.push({ closeness: "1ST COUSIN ONCE RE‑MOVED", person: child, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+							rows.push({ closeness: "1ST COUSIN ONCE RE‑MOVEN", person: child, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
 
 							if (child.children && child.children.length > 0) {
 								for (const secondCousin of child.children) {
@@ -4710,7 +5374,7 @@
 
 									if (secondCousin.children && secondCousin.children.length > 0) {
 										for (const twiceRemoved of secondCousin.children) {
-											rows.push({ closeness: "2ND COUSIN ONCE RE‑MOVED", person: twiceRemoved, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+											rows.push({ closeness: "2ND COUSIN ONCE RE‑MOVEN", person: twiceRemoved, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
 										}
 									}
 								}
@@ -4724,7 +5388,7 @@
 					rows.push({ closeness: "SIBLING OF MOTHER OF FATHER", person: sib, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
 					if (sib.children && sib.children.length > 0) {
 						for (const child of sib.children) {
-							rows.push({ closeness: "1ST COUSIN ONCE RE‑MOVED", person: child, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+							rows.push({ closeness: "1ST COUSIN ONCE RE‑MOVEN", person: child, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
 
 							if (child.children && child.children.length > 0) {
 								for (const secondCousin of child.children) {
@@ -4732,7 +5396,7 @@
 
 									if (secondCousin.children && secondCousin.children.length > 0) {
 										for (const twiceRemoved of secondCousin.children) {
-											rows.push({ closeness: "2ND COUSIN ONCE RE‑MOVED", person: twiceRemoved, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
+											rows.push({ closeness: "2ND COUSIN ONCE RE‑MOVEN", person: twiceRemoved, childFormat: false, showSpouse: true, showChildren: true, showExSpouse: true });
 										}
 									}
 								}
@@ -4956,6 +5620,7 @@
 				const givenNames = generateGivenNames(gender, [], 0);
 
 				const mockRoot = createPerson(gender, birthDateStr, placeOfBirth, familyName, placeOfBirthCoords, fullBirthAddress);
+				mockRoot._protagonist = true;
 				if (deathDateInput && deathDateInput.value.trim().length === 8 && /^\d{8}$/.test(deathDateInput.value.trim())) {
 					mockRoot.died = true;
 					mockRoot.deathDate = formatDate(referenceDate.year, referenceDate.month, referenceDate.day);
@@ -5044,9 +5709,10 @@
 					mockRoot.spouseStr = spouseStr;
 
 					if (hasChildren) {
+						const _fertC = getFertilityContinuation(_effectiveYearOf(referenceDate.year));
 						let numChildren = 1;
 						for (let i = 0; i < 5; i++) {
-							if (Math.random() < 0.7) numChildren++;
+							if (Math.random() < _fertC) numChildren++;
 							else break;
 						}
 						const allParentNames = givenNames.split(" ").concat(spouseNames.split(" "));
@@ -5081,7 +5747,7 @@
 								}
 							}
 							for (let i = 0; i < numChildren; i++) {
-								const childGender = Math.random() < 0.5 ? 1 : 0;
+								const childGender = randomChildGender();
 								let childBirthDate;
 								let attempts = 0;
 								let success = false;
@@ -5237,6 +5903,7 @@
 							if (childObj.addressHistory && childObj.addressHistory.length > 0) {
 								cStr += `<span class="address-history">${formatAddressList(childObj.addressHistory)}</span>`;
 							}
+							cStr += ` ${getSexMarker(childObj)}`;
 							finalChildrenStrs.push(cStr);
 						}
 						result += ` , children : ${finalChildrenStrs.join(" , ")}`;
@@ -5275,7 +5942,7 @@
 				}
 
 				return {
-					text: result,
+					text: result + ` ${getSexMarker(mockRoot)}`,
 					birthDate: birthDateStr,
 				};
 			}
@@ -5329,6 +5996,7 @@
 						div.className = "entry";
 						div.innerHTML = `<span class="entry-number">${i}.</span><span class="entry-content">${treeHtml}</span><span class="entry-age"></span>`;
 						output.appendChild(div);
+						renderFamilyMap(tree, formattedDate);
 					}
 				} else {
 					const m = getMultiplier();
@@ -5375,6 +6043,7 @@
 						div.className = "entry";
 						div.innerHTML = `<span class="entry-number">${i}.</span><span class="entry-content">${treeHtml}</span><span class="entry-age"></span>`;
 						output.appendChild(div);
+						renderFamilyMap(tree, formattedDate);
 					}
 				} else {
 					const m = getMultiplier();
@@ -5448,12 +6117,12 @@
 				const femaleBtn = document.getElementById("createFemale");
 				if (this.checked) {
 					label.textContent = "RE‑TURN TO MATRIARCHY";
-					maleBtn.textContent = "CREATE FEMALE";
-					femaleBtn.textContent = "CREATE MALE";
+					maleBtn.textContent = "CREATE WIFEMAN";
+					femaleBtn.textContent = "CREATE WEREMAN";
 				} else {
 					label.textContent = "SWITCH TO PATRIARCHY";
-					maleBtn.textContent = "CREATE MALE";
-					femaleBtn.textContent = "CREATE FEMALE";
+					maleBtn.textContent = "CREATE WEREMAN";
+					femaleBtn.textContent = "CREATE WIFEMAN";
 				}
 			});
 		</script>
